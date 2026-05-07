@@ -1,69 +1,104 @@
 # Interceptify
 
-Interceptify is a Flutter DevTools extension designed to help developers intercept, inspect, and modify network requests and responses in real-time. It works as an interceptor for the Dio package, bridging the gap between your running application and the Flutter DevTools suite.
+Interceptify is a powerful Flutter DevTools extension that gives you total control over your application's network layer. It allows you to **intercept, inspect, and modify** network requests and responses in real-time, directly from your Flutter DevTools suite.
 
-## Features
+Built specifically for the [Dio](https://pub.dev/packages/dio) package, Interceptify bridges the gap between your running app and your development environment, making it an essential tool for debugging complex API flows, testing edge cases, and simulating server responses.
 
-- **Real-time Interception**: Capture all outgoing requests and incoming responses from your Dio instances.
-- **Dynamic Rules**: Create rules to automatically pause requests based on URL patterns or HTTP methods.
-- **Interactive Inspection**: View request and response details, including headers, query parameters, and bodies.
-- **On-the-fly Modification**: Edit request URLs, headers, and bodies before they are sent. Modify response status codes and bodies before they reach your app's logic.
-- **Interactive JSON Viewer**: Easily navigate complex JSON structures with node-level expand and collapse functionality.
-- **Global Controls**: Toggle interception globally or enable "Pause All" modes for quick debugging.
-- **Request Retry**: Trigger a retry of any captured request directly from the DevTools UI.
-- **Configurable Timeouts**: Set a custom timeout for paused requests to ensure your app doesn't hang indefinitely if you forget to take action.
+---
 
-## Installation
+## 🚀 Features
 
-Add Interceptify to your project's dependencies:
+### Real-Time Network Control
+*   **Live Interception**: Capture all outgoing requests and incoming responses as they happen.
+*   **On-the-Fly Modification**: Edit URLs, Headers, Query Parameters, and Bodies before they reach their destination.
+*   **Response Mocking**: Change status codes and response bodies to test how your app handles different server states.
+
+### Intelligent Rules Engine
+*   **Conditional Pausing**: Create rules based on URL patterns (contains, equals, starts with) or HTTP methods.
+*   **Granular Control**: Focus only on specific API endpoints while letting others pass through.
+*   **GraphQL Support**: Built-in logic to easily identify and target GraphQL transactions.
+
+### Premium Developer Experience
+*   **Interactive JSON Viewer**: Navigate deep and complex JSON structures with node-level expand/collapse.
+*   **Global Toggles**: One-click to pause all requests or responses, or disable interception entirely.
+*   **Request Retry**: Instantly retry any captured request with its original or modified data.
+*   **Dynamic Timeouts**: Configure how long requests should wait for your input before auto-resuming.
+
+---
+
+## 📦 Installation
+
+Add `interceptify` to your `pubspec.yaml` dependencies:
 
 ```yaml
 dependencies:
   interceptify: ^latest_version
 ```
 
-## Setup
+Then run:
+```bash
+flutter pub get
+```
 
-To start using Interceptify, you need to initialize the bridge and add the interceptor to your Dio instance.
+---
+
+## 🛠️ Getting Started
+
+### 1. Initialize the Bridge
+Initialize Interceptify at the start of your application to establish the communication bridge with DevTools.
 
 ```dart
 import 'package:interceptify/interceptify.dart';
-import 'package:dio/dio.dart';
 
 void main() async {
-  // 1. Initialize Interceptify (usually at the start of your app)
+  // Initialize the bridge
   final interceptify = await Interceptify.initialize();
-
-  final dio = Dio();
-
-  // 2. Register your Dio instance (required for Retry functionality)
-  interceptify.registerDioInstance(dio);
-
-  // 3. Add the interceptor to Dio
-  dio.interceptors.add(interceptify.interceptor);
-
-  runApp(MyApp());
+  
+  runApp(MyApp(interceptify: interceptify));
 }
 ```
 
-## How to Use
+### 2. Configure Dio
+Add the Interceptify interceptor to your Dio instance. To enable the **Retry** feature, make sure to register the Dio instance as well.
 
-1. Run your Flutter application in debug mode.
-2. Open **Flutter DevTools** in your browser or IDE.
-3. Look for the **Interceptify** tab (it might be under the "More Actions" menu or marked with a Shield icon).
-4. In the Interceptify tab:
-   - Go to the **Rules** menu to enable interception.
-   - Add rules to specify which requests you want to pause.
-   - When a request is paused, it will appear in the list with a "PENDING" status.
-   - Select the request to view details and use the **Edit** or **Continue** buttons at the bottom to manage the transaction.
+```dart
+final dio = Dio();
 
-## Additional Tips
+// Add the interceptor
+dio.interceptors.add(interceptify.interceptor);
 
-- **Retry Support**: To use the "Retry" button in the Detail View, ensure you have called `interceptify.registerDioInstance(dio)` during initialization.
-- **JSON Navigation**: For large JSON bodies, click the arrow icon next to objects or arrays to collapse them and focus on the data you need.
-- **Timeout Management**: If you are working on long debugging sessions, go to the **Rules > Settings** section to increase the "Interception Timeout". This prevents the app from auto-resuming before you've finished your modifications.
-- **GraphQL Support**: You can create rules specifically for GraphQL by selecting the "GraphQL Only" condition, which looks for typical GraphQL endpoints.
+// Register the instance (required for Retry functionality)
+interceptify.registerDioInstance(dio);
+```
 
-## License
+---
 
-MIT
+## 📖 How to Use
+
+1.  **Launch Your App**: Run your app in **Debug Mode**.
+2.  **Open DevTools**: Open Flutter DevTools in your browser or IDE.
+3.  **Find Interceptify**: Look for the **Interceptify** tab (represented by a **Shield** icon).
+4.  **Manage Rules**: 
+    *   Navigate to the **Rules** tab.
+    *   Choose a specific rule.
+    *   Create the rule that you want to pause.
+5.  **Intercept & Modify**:
+    *   When a matching request is made, it will appear as **PENDING** in the list.
+    *   Select the request, modify its details in the **Request** or **Response** tabs.
+    *   Click **Continue** at the bottom to let the transaction proceed.
+
+---
+
+## 💡 Pro Tips
+
+*   **Quick Debugging**: Use the **Pause All Requests** or **Pause All Responses** toggles in the Rules tab to stop all traffic instantly without creating specific rules.
+*   **Avoiding Hangs**: If you are in a long debugging session, increase the **Interception Timeout** in **Rules > Settings** to prevent the app from auto-resuming too early.
+*   **JSON Shortcuts**: Use the arrow icons in the JSON viewer to collapse large objects/arrays and focus on relevant data.
+
+---
+
+## 🤝 Support & Contribution
+
+Interceptify is an open-source project. If you encounter bugs, have feature requests, or want to contribute, please visit our GitHub repository.
+
+**License**: MIT
