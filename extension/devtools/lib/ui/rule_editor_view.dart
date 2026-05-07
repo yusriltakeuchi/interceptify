@@ -46,11 +46,39 @@ class _RuleEditorViewState extends State<RuleEditorView> {
   final List<_Rule> _rules = [];
   _RuleCondition _selectedCondition = _RuleCondition.always;
   final _valueController = TextEditingController();
-  bool _isLoading = false;
+  final _timeoutController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchTimeout();
+  }
+
+  Future<void> _fetchTimeout() async {
+    final timeout = await widget.vmServiceClient.getTimeout();
+    if (mounted) {
+      setState(() {
+        _timeoutController.text = timeout.toString();
+      });
+    }
+  }
+
+  Future<void> _updateTimeout() async {
+    final timeout = int.tryParse(_timeoutController.text);
+    if (timeout != null && timeout > 0) {
+      final success = await widget.vmServiceClient.setTimeout(timeout);
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Timeout updated successfully')),
+        );
+      }
+    }
+  }
 
   @override
   void dispose() {
     _valueController.dispose();
+    _timeoutController.dispose();
     super.dispose();
   }
 
@@ -234,12 +262,68 @@ class _RuleEditorViewState extends State<RuleEditorView> {
             ),
           ),
           const SizedBox(height: 24),
+          _buildSettingsSection(),
+          const SizedBox(height: 24),
           const Text(
             'Rules are used to automatically pause requests that match specific criteria.',
             style: TextStyle(fontSize: 11, color: Colors.grey, height: 1.5),
           ),
         ],
       ),
+    );
+  }
+
+  bool _isLoading = false;
+
+  Widget _buildSettingsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('SETTINGS', Icons.settings),
+        const SizedBox(height: 16),
+        Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: Theme.of(context).dividerColor),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Interception Timeout (seconds)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _timeoutController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          hintText: 'e.g. 30',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      onPressed: _updateTimeout,
+                      child: const Text('Save'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Auto-resume request/response if no action taken within this time.',
+                  style: TextStyle(fontSize: 10, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 

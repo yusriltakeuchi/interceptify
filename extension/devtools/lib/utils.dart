@@ -45,4 +45,10 @@ class InterceptifyConstants {
   /// Extension for toggling pause all requests
   static const String togglePauseAllExtension =
       'ext.interceptify.togglePauseAll';
+
+  /// Extension for getting timeout setting
+  static const String getTimeoutExtension = 'ext.interceptify.getTimeout';
+
+  /// Extension for setting timeout setting
+  static const String setTimeoutExtension = 'ext.interceptify.setTimeout';
 }

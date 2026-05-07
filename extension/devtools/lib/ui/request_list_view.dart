@@ -122,7 +122,7 @@ class _RequestListViewState extends State<RequestListView> {
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(fontSize: 12),
                                     ),
-                                    if (response != null)
+                                    if (response != null && !request.paused)
                                       Text(
                                         'Status: ${response.statusCode} - ${response.durationMillis}ms',
                                         style: TextStyle(
@@ -147,13 +147,14 @@ class _RequestListViewState extends State<RequestListView> {
                                         style: TextStyle(
                                           fontSize: 10,
                                           fontStyle: FontStyle.italic,
+                                          color: Colors.orange,
                                         ),
                                       ),
                                   ],
                                 ),
                               ),
                               // Status icon
-                              if (response != null)
+                              if (response != null && !request.paused)
                                 Icon(
                                   response.statusCode! >= 400
                                       ? Icons.error_outline

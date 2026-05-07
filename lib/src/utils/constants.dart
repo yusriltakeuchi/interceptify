@@ -46,6 +46,12 @@ class InterceptifyConstants {
   static const String togglePauseAllExtension =
       'ext.interceptify.togglePauseAll';
 
+  /// Extension for getting timeout setting
+  static const String getTimeoutExtension = 'ext.interceptify.getTimeout';
+
+  /// Extension for setting timeout setting
+  static const String setTimeoutExtension = 'ext.interceptify.setTimeout';
+
   /// Default timeout for paused requests (30 seconds)
   static const Duration requestTimeout = Duration(seconds: 30);
 

@@ -8,6 +8,7 @@ class RuleManager {
   bool _enabled = true;
   bool _pauseAllRequests = false;
   bool _pauseAllResponses = false;
+  int _timeoutSeconds = 30;
 
   /// Whether interception is enabled globally
   bool get enabled => _enabled;
@@ -17,6 +18,14 @@ class RuleManager {
 
   /// Whether all responses should be paused
   bool get pauseAllResponses => _pauseAllResponses;
+
+  /// Timeout in seconds for paused requests/responses
+  int get timeoutSeconds => _timeoutSeconds;
+
+  /// Set timeout in seconds
+  void setTimeoutSeconds(int seconds) {
+    _timeoutSeconds = seconds;
+  }
 
   /// Set global enabled state
   void setEnabled(bool enabled) {

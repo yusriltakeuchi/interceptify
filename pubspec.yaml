@@ -59,6 +59,3 @@ flutter:
   # For details regarding fonts in packages, see
   # https://flutter.dev/to/font-from-package
 
-devtools:
-  - package: interceptify
-    path: devtools

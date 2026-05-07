@@ -1,6 +1,6 @@
 name: interceptify
 issueTracker: https://github.com/yourusername/interceptify/issues
 version: 0.0.1
-materialIconCodePoint: 0xe0b1
+materialIconCodePoint: 0xe640
 requiresConnection: true
 buildLocation: build/web

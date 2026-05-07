@@ -37,8 +37,6 @@ dependencies:
   dio: ^5.4.0
   interceptify:
     path: ../
-  interceptify_devtools:
-    path: ../extension/devtools
 
 dev_dependencies:
   flutter_test:
@@ -93,6 +91,3 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
 
-# devtools:
-#   - package: interceptify
-#     path: ../extension/devtools

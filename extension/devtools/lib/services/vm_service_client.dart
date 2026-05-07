@@ -208,4 +208,33 @@ class InterceptifyVMServiceClient {
       return false;
     }
   }
+
+  /// Get interception timeout
+  Future<int> getTimeout() async {
+    try {
+      final response = await serviceManager.callServiceExtensionOnMainIsolate(
+        InterceptifyConstants.getTimeoutExtension,
+      );
+      
+      return response.json?['timeout'] as int? ?? 30;
+    } catch (e) {
+      print('Error getting timeout: $e');
+      return 30;
+    }
+  }
+
+  /// Set interception timeout
+  Future<bool> setTimeout(int seconds) async {
+    try {
+      final response = await serviceManager.callServiceExtensionOnMainIsolate(
+        InterceptifyConstants.setTimeoutExtension,
+        args: {'timeout': seconds.toString()},
+      );
+
+      return response.json?['success'] == true;
+    } catch (e) {
+      print('Error setting timeout: $e');
+      return false;
+    }
+  }
 }

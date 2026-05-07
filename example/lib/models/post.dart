@@ -13,7 +13,7 @@ class Post {
 
   factory Post.fromJson(Map<String, dynamic> json) => Post(
     id: json['id'] as int,
-    userId: json['userId'] as int,
+    userId: (json['userId'] ?? 0) as int,
     title: json['title'] as String,
     body: json['body'] as String,
   );

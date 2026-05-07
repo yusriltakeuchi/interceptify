@@ -49,6 +49,8 @@ class DevtoolsBridge {
     _registerTogglePauseAllResponses();
     _registerContinueResponse();
     _registerRetryRequest();
+    _registerGetTimeout();
+    _registerSetTimeout();
 
     InterceptifyLogger.info('Registered VM service extensions:');
     InterceptifyLogger.info('- ext.interceptify.getPendingRequests');
@@ -63,6 +65,8 @@ class DevtoolsBridge {
     InterceptifyLogger.info('- ext.interceptify.togglePauseAllResponses');
     InterceptifyLogger.info('- ext.interceptify.continueResponse');
     InterceptifyLogger.info('- ext.interceptify.retryRequest');
+    InterceptifyLogger.info('- ext.interceptify.getTimeout');
+    InterceptifyLogger.info('- ext.interceptify.setTimeout');
 
     InterceptifyLogger.info('DevTools bridge initialized');
   }
@@ -581,6 +585,56 @@ class DevtoolsBridge {
           );
         } catch (e) {
           InterceptifyLogger.error('Error in togglePauseAllResponses', e);
+          return developer.ServiceExtensionResponse.result(
+            jsonEncode({
+              'error': e.toString(),
+              'success': false,
+            }),
+          );
+        }
+      },
+    );
+  }
+
+  /// Register the getTimeout extension
+  void _registerGetTimeout() {
+    developer.registerExtension(
+      InterceptifyConstants.getTimeoutExtension,
+      (String method, Map<String, String> params) async {
+        return developer.ServiceExtensionResponse.result(
+          jsonEncode({
+            'timeout': _ruleManager.timeoutSeconds,
+            'success': true,
+          }),
+        );
+      },
+    );
+  }
+
+  /// Register the setTimeout extension
+  void _registerSetTimeout() {
+    developer.registerExtension(
+      InterceptifyConstants.setTimeoutExtension,
+      (String method, Map<String, String> params) async {
+        try {
+          final timeout = int.tryParse(params['timeout'] ?? '');
+          if (timeout != null) {
+            _ruleManager.setTimeoutSeconds(timeout);
+            return developer.ServiceExtensionResponse.result(
+              jsonEncode({
+                'success': true,
+                'timeout': timeout,
+              }),
+            );
+          }
+          return developer.ServiceExtensionResponse.result(
+            jsonEncode({
+              'error': 'Invalid timeout value',
+              'success': false,
+            }),
+          );
+        } catch (e) {
+          InterceptifyLogger.error('Error in setTimeout', e);
           return developer.ServiceExtensionResponse.result(
             jsonEncode({
               'error': e.toString(),

@@ -80,7 +80,7 @@ class InterceptifyDioInterceptor extends QueuedInterceptor {
         // Mark as paused and wait for continuation
         try {
           final modifications =
-              await _pendingRequestManager.pauseRequest(interceptedRequest);
+              await _pendingRequestManager.pauseRequest(interceptedRequest, timeout: Duration(seconds: _ruleManager.timeoutSeconds));
 
           // Apply modifications if provided
           if (modifications != null) {
@@ -186,6 +186,7 @@ class InterceptifyDioInterceptor extends QueuedInterceptor {
               response.headers.map.map((key, value) =>
                   MapEntry(key, value.isNotEmpty ? value.first : null)),
               response.statusCode ?? 200,
+              timeout: Duration(seconds: _ruleManager.timeoutSeconds),
             );
 
             // Apply response modifications if provided
