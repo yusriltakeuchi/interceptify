@@ -1,4 +1,5 @@
 import 'dart:developer' as developer;
+import 'package:flutter/foundation.dart';
 
 /// Simple logging utility for debugging the interceptify interceptor
 class InterceptifyLogger {
@@ -19,7 +20,7 @@ class InterceptifyLogger {
         '[Interceptify] $message',
         arguments: {'level': 'info'},
       );
-      print('[Interceptify] INFO: $message');
+      debugPrint('[Interceptify] INFO: $message');
     }
   }
 
@@ -30,7 +31,7 @@ class InterceptifyLogger {
         '[Interceptify] $message',
         arguments: {'level': 'warning'},
       );
-      print('[Interceptify] WARNING: $message');
+      debugPrint('[Interceptify] WARNING: $message');
     }
   }
 
@@ -41,12 +42,12 @@ class InterceptifyLogger {
         '[Interceptify] $message',
         arguments: {'level': 'error'},
       );
-      print('[Interceptify] ERROR: $message');
+      debugPrint('[Interceptify] ERROR: $message');
       if (error != null) {
-        print('[Interceptify] Exception: $error');
+        debugPrint('[Interceptify] Exception: $error');
       }
       if (stackTrace != null) {
-        print('[Interceptify] Stack trace: $stackTrace');
+        debugPrint('[Interceptify] Stack trace: $stackTrace');
       }
     }
   }
@@ -54,7 +55,7 @@ class InterceptifyLogger {
   /// Log a debug message
   static void debug(String message) {
     if (_debugMode) {
-      print('[Interceptify] DEBUG: $message');
+      debugPrint('[Interceptify] DEBUG: $message');
     }
   }
 }

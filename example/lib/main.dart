@@ -10,7 +10,7 @@ void main() {
   // Create Dio instance with Interceptify interceptor
   final dio = Dio();
   dio.interceptors.add(Interceptify.dioInterceptor);
-  
+
   // Register Dio instance for "Retry" support from DevTools
   Interceptify.registerDioInstance(dio);
 
@@ -20,10 +20,7 @@ void main() {
 class MyApp extends StatelessWidget {
   final Dio dio;
 
-  const MyApp({
-    required this.dio,
-    super.key,
-  });
+  const MyApp({required this.dio, super.key});
 
   @override
   Widget build(BuildContext context) {

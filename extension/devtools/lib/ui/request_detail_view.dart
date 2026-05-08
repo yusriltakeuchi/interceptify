@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../services/event_listener.dart';
 import '../services/vm_service_client.dart';
+import '../models/network_models.dart';
 
 /// Widget displaying detailed information about a selected request
 class RequestDetailView extends StatefulWidget {
@@ -12,12 +12,12 @@ class RequestDetailView extends StatefulWidget {
   final InterceptifyVMServiceClient vmServiceClient;
 
   const RequestDetailView({
-    Key? key,
+    super.key,
     required this.request,
     this.response,
     this.error,
     required this.vmServiceClient,
-  }) : super(key: key);
+  });
 
   @override
   State<RequestDetailView> createState() => _RequestDetailViewState();
@@ -137,9 +137,11 @@ class _RequestDetailViewState extends State<RequestDetailView>
     if (success) {
       setState(() => _isEditing = false);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to continue request')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to continue request')),
+        );
+      }
     }
   }
 
@@ -157,9 +159,11 @@ class _RequestDetailViewState extends State<RequestDetailView>
     if (success) {
       setState(() => _isEditingResponse = false);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to continue response')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to continue response')),
+        );
+      }
     }
   }
 
@@ -175,13 +179,17 @@ class _RequestDetailViewState extends State<RequestDetailView>
     final success = await widget.vmServiceClient.retryRequest(requestData);
 
     if (success) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Retry triggered')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Retry triggered')));
+      }
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Failed to trigger retry.')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to trigger retry.')),
+        );
+      }
     }
   }
 
@@ -208,8 +216,10 @@ class _RequestDetailViewState extends State<RequestDetailView>
     String url = req.url;
     if (req.queryParameters != null && req.queryParameters!.isNotEmpty) {
       final params = req.queryParameters!.entries
-          .map((e) =>
-              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value.toString())}')
+          .map(
+            (e) =>
+                '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value.toString())}',
+          )
           .join('&');
       url = '$url?$params';
     }
@@ -287,7 +297,7 @@ class _RequestDetailViewState extends State<RequestDetailView>
                   onPressed: () async {
                     final curl = _buildCurlCommand();
                     await Clipboard.setData(ClipboardData(text: curl));
-                    if (context.mounted) {
+                    if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('cURL copied to clipboard'),
@@ -330,9 +340,11 @@ class _RequestDetailViewState extends State<RequestDetailView>
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
+                    color: Colors.orange.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: Colors.orange.withOpacity(0.5)),
+                    border: Border.all(
+                      color: Colors.orange.withValues(alpha: 0.5),
+                    ),
                   ),
                   child: const Text(
                     'PENDING',
@@ -371,9 +383,9 @@ class _RequestDetailViewState extends State<RequestDetailView>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withOpacity(0.5)),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Text(
         method.toUpperCase(),
@@ -554,9 +566,9 @@ class _RequestDetailViewState extends State<RequestDetailView>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withOpacity(0.5)),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Text(
         statusCode.toString(),
@@ -666,7 +678,7 @@ class _RequestDetailViewState extends State<RequestDetailView>
               decoration: InputDecoration(
                 labelText: 'Status Code',
                 border: const OutlineInputBorder(),
-                fillColor: Colors.black.withOpacity(0.2),
+                fillColor: Colors.black.withValues(alpha: 0.2),
                 filled: true,
               ),
               style: const TextStyle(
@@ -686,7 +698,9 @@ class _RequestDetailViewState extends State<RequestDetailView>
             decoration: BoxDecoration(
               color: const Color(0xFF1E1E1E),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.blueAccent.withOpacity(0.3)),
+              border: Border.all(
+                color: Colors.blueAccent.withValues(alpha: 0.3),
+              ),
             ),
             child: TextField(
               maxLines: null,
@@ -696,7 +710,7 @@ class _RequestDetailViewState extends State<RequestDetailView>
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.all(12),
                 hintText: 'Enter JSON here...',
-                hintStyle: TextStyle(color: Colors.grey.withOpacity(0.5)),
+                hintStyle: TextStyle(color: Colors.grey.withValues(alpha: 0.5)),
               ),
               style: const TextStyle(
                 fontFamily: 'monospace',
@@ -737,7 +751,7 @@ class _RequestDetailViewState extends State<RequestDetailView>
                 : const Color(0xFFF5F7FA),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: Theme.of(context).dividerColor.withOpacity(0.5),
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
             ),
           ),
           child: JsonColorViewer(data: data),
@@ -747,8 +761,9 @@ class _RequestDetailViewState extends State<RequestDetailView>
   }
 
   Widget _buildUniversalActionFooter() {
-    if (!widget.request.paused && !_isEditing && !_isEditingResponse)
+    if (!widget.request.paused && !_isEditing && !_isEditingResponse) {
       return const SizedBox.shrink();
+    }
 
     // Check if we are in a state that requires response actions
     bool showResponseActions =
@@ -758,8 +773,9 @@ class _RequestDetailViewState extends State<RequestDetailView>
     bool showRequestActions =
         widget.response == null && (widget.request.paused || _isEditing);
 
-    if (!showResponseActions && !showRequestActions)
+    if (!showResponseActions && !showRequestActions) {
       return const SizedBox.shrink();
+    }
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -768,7 +784,7 @@ class _RequestDetailViewState extends State<RequestDetailView>
         border: Border(top: BorderSide(color: Theme.of(context).dividerColor)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             offset: const Offset(0, -2),
             blurRadius: 4,
           ),
@@ -879,13 +895,14 @@ class _RequestDetailViewState extends State<RequestDetailView>
 
 class JsonColorViewer extends StatelessWidget {
   final dynamic data;
-  const JsonColorViewer({Key? key, required this.data}) : super(key: key);
+  const JsonColorViewer({super.key, required this.data});
 
   @override
   Widget build(BuildContext context) {
-    if (data == null)
+    if (data == null) {
       return const Text('null', style: TextStyle(color: Colors.grey));
-      
+    }
+
     return Stack(
       children: [
         SelectionArea(child: JsonNodeViewer(data: data)),
@@ -932,12 +949,12 @@ class JsonNodeViewer extends StatefulWidget {
   final bool isLast;
 
   const JsonNodeViewer({
-    Key? key,
+    super.key,
     required this.data,
     this.indent = 0,
     this.keyName,
     this.isLast = true,
-  }) : super(key: key);
+  });
 
   @override
   State<JsonNodeViewer> createState() => _JsonNodeViewerState();
@@ -960,7 +977,7 @@ class _JsonNodeViewerState extends State<JsonNodeViewer> {
     } else {
       textToCopy = widget.data.toString();
     }
-    
+
     await Clipboard.setData(ClipboardData(text: textToCopy));
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1060,7 +1077,11 @@ class _JsonNodeViewerState extends State<JsonNodeViewer> {
                       const SizedBox(width: 8),
                       InkWell(
                         onTap: _copyToClipboard,
-                        child: const Icon(Icons.copy, size: 14, color: Colors.grey),
+                        child: const Icon(
+                          Icons.copy,
+                          size: 14,
+                          color: Colors.grey,
+                        ),
                       ),
                     ],
                   ],

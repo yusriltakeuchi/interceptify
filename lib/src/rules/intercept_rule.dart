@@ -88,8 +88,9 @@ class InterceptRule {
   factory InterceptRule.fromJson(Map<String, dynamic> json) {
     return InterceptRule(
       id: json['id'] as String,
-      condition:
-          RuleCondition.values.byName(json['condition'] as String? ?? 'always'),
+      condition: RuleCondition.values.byName(
+        json['condition'] as String? ?? 'always',
+      ),
       value: json['value'] as String?,
       enabled: json['enabled'] as bool? ?? true,
       createdAt: json['createdAt'] != null

@@ -87,8 +87,10 @@ class InterceptedRequest {
           method == other.method &&
           url == other.url &&
           const DeepCollectionEquality().equals(headers, other.headers) &&
-          const DeepCollectionEquality()
-              .equals(queryParameters, other.queryParameters) &&
+          const DeepCollectionEquality().equals(
+            queryParameters,
+            other.queryParameters,
+          ) &&
           body == other.body &&
           timestamp == other.timestamp &&
           paused == other.paused;

@@ -20,6 +20,8 @@ Built specifically for the [Dio](https://pub.dev/packages/dio) package, Intercep
 
 ### Premium Developer Experience
 *   **Interactive JSON Viewer**: Navigate deep and complex JSON structures with node-level expand/collapse.
+*   **Node-Level Copy**: Hover over any JSON node to copy specific keys or entire objects to your clipboard.
+*   **Copy as cURL**: Instantly export any captured request as a formatted cURL command for testing in Postman or terminal.
 *   **Global Toggles**: One-click to pause all requests or responses, or disable interception entirely.
 *   **Request Retry**: Instantly retry any captured request with its original or modified data.
 *   **Dynamic Timeouts**: Configure how long requests should wait for your input before auto-resuming.

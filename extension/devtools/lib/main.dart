@@ -8,7 +8,7 @@ void main() {
 }
 
 class InterceptifyDevToolsApp extends StatelessWidget {
-  const InterceptifyDevToolsApp({Key? key}) : super(key: key);
+  const InterceptifyDevToolsApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -16,9 +16,7 @@ class InterceptifyDevToolsApp extends StatelessWidget {
       title: 'Interceptify DevTools Extension',
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue,
-        ),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
@@ -29,9 +27,7 @@ class InterceptifyDevToolsApp extends StatelessWidget {
         ),
       ),
       themeMode: ThemeMode.system,
-      home: DevToolsExtension(
-        child: const InterceptifyExtensionScreen(),
-      ),
+      home: DevToolsExtension(child: const InterceptifyExtensionScreen()),
     );
   }
 }

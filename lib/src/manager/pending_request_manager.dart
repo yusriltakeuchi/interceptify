@@ -9,7 +9,10 @@ class PendingRequestManager {
   final Map<String, _PendingRequest> _pendingRequests = {};
 
   /// Pause a request and wait for continuation
-  Future<Map<String, dynamic>?> pauseRequest(InterceptedRequest request, {Duration? timeout}) {
+  Future<Map<String, dynamic>?> pauseRequest(
+    InterceptedRequest request, {
+    Duration? timeout,
+  }) {
     final completer = Completer<Map<String, dynamic>?>();
     final effectiveTimeout = timeout ?? InterceptifyConstants.requestTimeout;
 
@@ -22,13 +25,15 @@ class PendingRequestManager {
     _pendingRequests[request.id] = pendingRequest;
 
     InterceptifyLogger.info(
-        'Request paused: ${request.method} ${request.url} (ID: ${request.id})');
+      'Request paused: ${request.method} ${request.url} (ID: ${request.id})',
+    );
 
     // Set up timeout to auto-resume
     final timeoutTimer = Timer(effectiveTimeout, () {
       if (_pendingRequests.containsKey(request.id)) {
         InterceptifyLogger.warning(
-            'Request timeout (${effectiveTimeout.inSeconds}s), auto-resuming: ${request.id}');
+          'Request timeout (${effectiveTimeout.inSeconds}s), auto-resuming: ${request.id}',
+        );
         _pendingRequests.remove(request.id);
         if (!completer.isCompleted) {
           completer.complete(null); // Resume with no modifications
@@ -47,7 +52,8 @@ class PendingRequestManager {
 
     if (pendingRequest == null) {
       InterceptifyLogger.warning(
-          'Attempted to continue non-existent request: $requestId');
+        'Attempted to continue non-existent request: $requestId',
+      );
       return false;
     }
 
@@ -56,7 +62,8 @@ class PendingRequestManager {
 
     final duration = DateTime.now().difference(pendingRequest.startTime);
     InterceptifyLogger.info(
-        'Request continued: $requestId (waited ${duration.inMilliseconds}ms)');
+      'Request continued: $requestId (waited ${duration.inMilliseconds}ms)',
+    );
 
     if (!pendingRequest.completer.isCompleted) {
       pendingRequest.completer.complete(modifications);
@@ -70,7 +77,9 @@ class PendingRequestManager {
     final pendingRequest = _pendingRequests.remove(requestId);
 
     if (pendingRequest == null) {
-      InterceptifyLogger.warning('Attempted to cancel non-existent request: $requestId');
+      InterceptifyLogger.warning(
+        'Attempted to cancel non-existent request: $requestId',
+      );
       return false;
     }
 
@@ -80,8 +89,9 @@ class PendingRequestManager {
     InterceptifyLogger.info('Request canceled: $requestId');
 
     if (!pendingRequest.completer.isCompleted) {
-      pendingRequest.completer
-          .completeError(Exception('Request canceled by DevTools'));
+      pendingRequest.completer.completeError(
+        Exception('Request canceled by DevTools'),
+      );
     }
 
     return true;
@@ -101,7 +111,13 @@ class PendingRequestManager {
   int get pendingCount => _pendingRequests.length;
 
   /// Pause a response and wait for continuation
-  Future<Map<String, dynamic>?> pauseResponse(String requestId, dynamic responseData, Map<String, dynamic>? responseHeaders, int statusCode, {Duration? timeout}) {
+  Future<Map<String, dynamic>?> pauseResponse(
+    String requestId,
+    dynamic responseData,
+    Map<String, dynamic>? responseHeaders,
+    int statusCode, {
+    Duration? timeout,
+  }) {
     final completer = Completer<Map<String, dynamic>?>();
     final effectiveTimeout = timeout ?? InterceptifyConstants.requestTimeout;
 
@@ -118,7 +134,9 @@ class PendingRequestManager {
     // Set up timeout to auto-resume
     final timeoutTimer = Timer(effectiveTimeout, () {
       if (_pendingResponses.containsKey(requestId)) {
-        InterceptifyLogger.warning('Response timeout (${effectiveTimeout.inSeconds}s), auto-resuming: $requestId');
+        InterceptifyLogger.warning(
+          'Response timeout (${effectiveTimeout.inSeconds}s), auto-resuming: $requestId',
+        );
         _pendingResponses.remove(requestId);
         if (!completer.isCompleted) {
           completer.complete(null);

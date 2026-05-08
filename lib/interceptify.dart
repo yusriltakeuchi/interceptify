@@ -9,15 +9,15 @@ import 'src/rules/rule_manager.dart';
 import 'src/utils/logging.dart';
 
 /// Main API for Interceptify network interceptor
-/// 
+///
 /// Usage:
 /// ```dart
 /// void main() {
 ///   Interceptify.initialize();
-///   
+///
 ///   final dio = Dio();
 ///   dio.interceptors.add(Interceptify.dioInterceptor);
-///   
+///
 ///   runApp(MyApp());
 /// }
 /// ```
@@ -41,8 +41,7 @@ class Interceptify {
 
     // Only initialize in debug mode
     if (!kDebugMode) {
-      InterceptifyLogger.info(
-          'Interceptify disabled in release mode');
+      InterceptifyLogger.info('Interceptify disabled in release mode');
       return;
     }
 
@@ -80,7 +79,8 @@ class Interceptify {
   static InterceptifyDioInterceptor get dioInterceptor {
     if (_dioInterceptor == null) {
       throw StateError(
-          'Interceptify not initialized. Call Interceptify.initialize() first.');
+        'Interceptify not initialized. Call Interceptify.initialize() first.',
+      );
     }
     return _dioInterceptor!;
   }
@@ -89,7 +89,8 @@ class Interceptify {
   static PendingRequestManager get pendingRequestManager {
     if (_pendingRequestManager == null) {
       throw StateError(
-          'Interceptify not initialized. Call Interceptify.initialize() first.');
+        'Interceptify not initialized. Call Interceptify.initialize() first.',
+      );
     }
     return _pendingRequestManager!;
   }
@@ -98,7 +99,8 @@ class Interceptify {
   static RuleManager get ruleManager {
     if (_ruleManager == null) {
       throw StateError(
-          'Interceptify not initialized. Call Interceptify.initialize() first.');
+        'Interceptify not initialized. Call Interceptify.initialize() first.',
+      );
     }
     return _ruleManager!;
   }
@@ -107,7 +109,8 @@ class Interceptify {
   static DevtoolsBridge get devtoolsBridge {
     if (_devtoolsBridge == null) {
       throw StateError(
-          'Interceptify not initialized. Call Interceptify.initialize() first.');
+        'Interceptify not initialized. Call Interceptify.initialize() first.',
+      );
     }
     return _devtoolsBridge!;
   }
@@ -119,7 +122,8 @@ class Interceptify {
   static void addRule(InterceptRule rule) {
     ruleManager.addRule(rule);
     InterceptifyLogger.info(
-        'Rule added: ${rule.condition.name} - ${rule.value}');
+      'Rule added: ${rule.condition.name} - ${rule.value}',
+    );
   }
 
   /// Remove a rule by ID
@@ -156,8 +160,7 @@ class Interceptify {
   }
 
   /// Get number of pending requests
-  static int getPendingRequestCount() =>
-      pendingRequestManager.pendingCount;
+  static int getPendingRequestCount() => pendingRequestManager.pendingCount;
 
   /// Clean up all resources
   static void dispose() {

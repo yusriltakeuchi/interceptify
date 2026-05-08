@@ -16,20 +16,14 @@ class DevtoolsBridge {
   final RuleManager _ruleManager;
   final Set<Dio> _dioInstances = {};
 
-  DevtoolsBridge._internal(
-    this._pendingRequestManager,
-    this._ruleManager,
-  );
+  DevtoolsBridge._internal(this._pendingRequestManager, this._ruleManager);
 
   /// Get or create singleton instance
   factory DevtoolsBridge({
     required PendingRequestManager pendingRequestManager,
     required RuleManager ruleManager,
   }) {
-    _instance ??= DevtoolsBridge._internal(
-      pendingRequestManager,
-      ruleManager,
-    );
+    _instance ??= DevtoolsBridge._internal(pendingRequestManager, ruleManager);
     return _instance!;
   }
 
@@ -88,18 +82,12 @@ class DevtoolsBridge {
           final pending = _pendingRequestManager.getPendingRequests();
           final data = pending.map((r) => r.toJson()).toList();
           return developer.ServiceExtensionResponse.result(
-            jsonEncode({
-              'result': data,
-              'success': true,
-            }),
+            jsonEncode({'result': data, 'success': true}),
           );
         } catch (e) {
           InterceptifyLogger.error('Error in getPendingRequests', e);
           return developer.ServiceExtensionResponse.result(
-            jsonEncode({
-              'error': e.toString(),
-              'success': false,
-            }),
+            jsonEncode({'error': e.toString(), 'success': false}),
           );
         }
       },
@@ -133,8 +121,10 @@ class DevtoolsBridge {
             }
           }
 
-          final success =
-              _pendingRequestManager.continueRequest(requestId, modifications);
+          final success = _pendingRequestManager.continueRequest(
+            requestId,
+            modifications,
+          );
 
           return developer.ServiceExtensionResponse.result(
             jsonEncode({
@@ -147,10 +137,7 @@ class DevtoolsBridge {
         } catch (e) {
           InterceptifyLogger.error('Error in continueRequest', e);
           return developer.ServiceExtensionResponse.result(
-            jsonEncode({
-              'error': e.toString(),
-              'success': false,
-            }),
+            jsonEncode({'error': e.toString(), 'success': false}),
           );
         }
       },
@@ -159,144 +146,122 @@ class DevtoolsBridge {
 
   /// Register the cancelRequest extension
   void _registerCancelRequest() {
-    developer.registerExtension(
-      InterceptifyConstants.cancelRequestExtension,
-      (String method, Map<String, String> params) async {
-        try {
-          final requestId = params['requestId'];
-          if (requestId == null) {
-            return developer.ServiceExtensionResponse.result(
-              jsonEncode({
-                'error': 'requestId parameter required',
-                'success': false,
-              }),
-            );
-          }
-
-          final success = _pendingRequestManager.cancelRequest(requestId);
-
+    developer.registerExtension(InterceptifyConstants.cancelRequestExtension, (
+      String method,
+      Map<String, String> params,
+    ) async {
+      try {
+        final requestId = params['requestId'];
+        if (requestId == null) {
           return developer.ServiceExtensionResponse.result(
             jsonEncode({
-              'success': success,
-              'message': success
-                  ? 'Request canceled'
-                  : 'Request not found or already continued',
-            }),
-          );
-        } catch (e) {
-          InterceptifyLogger.error('Error in cancelRequest', e);
-          return developer.ServiceExtensionResponse.result(
-            jsonEncode({
-              'error': e.toString(),
+              'error': 'requestId parameter required',
               'success': false,
             }),
           );
         }
-      },
-    );
+
+        final success = _pendingRequestManager.cancelRequest(requestId);
+
+        return developer.ServiceExtensionResponse.result(
+          jsonEncode({
+            'success': success,
+            'message': success
+                ? 'Request canceled'
+                : 'Request not found or already continued',
+          }),
+        );
+      } catch (e) {
+        InterceptifyLogger.error('Error in cancelRequest', e);
+        return developer.ServiceExtensionResponse.result(
+          jsonEncode({'error': e.toString(), 'success': false}),
+        );
+      }
+    });
   }
 
   /// Register the addRule extension
   void _registerAddRule() {
-    developer.registerExtension(
-      InterceptifyConstants.addRuleExtension,
-      (String method, Map<String, String> params) async {
-        try {
-          final ruleJson = params['rule'];
-          if (ruleJson == null) {
-            return developer.ServiceExtensionResponse.result(
-              jsonEncode({
-                'error': 'rule parameter required',
-                'success': false,
-              }),
-            );
-          }
-
-          final rule =
-              _parseRule(jsonDecode(ruleJson) as Map<String, dynamic>);
-          _ruleManager.addRule(rule);
-
+    developer.registerExtension(InterceptifyConstants.addRuleExtension, (
+      String method,
+      Map<String, String> params,
+    ) async {
+      try {
+        final ruleJson = params['rule'];
+        if (ruleJson == null) {
           return developer.ServiceExtensionResponse.result(
-            jsonEncode({
-              'success': true,
-              'rule': rule.toJson(),
-            }),
-          );
-        } catch (e) {
-          InterceptifyLogger.error('Error in addRule', e);
-          return developer.ServiceExtensionResponse.result(
-            jsonEncode({
-              'error': e.toString(),
-              'success': false,
-            }),
+            jsonEncode({'error': 'rule parameter required', 'success': false}),
           );
         }
-      },
-    );
+
+        final rule = _parseRule(jsonDecode(ruleJson) as Map<String, dynamic>);
+        _ruleManager.addRule(rule);
+
+        return developer.ServiceExtensionResponse.result(
+          jsonEncode({'success': true, 'rule': rule.toJson()}),
+        );
+      } catch (e) {
+        InterceptifyLogger.error('Error in addRule', e);
+        return developer.ServiceExtensionResponse.result(
+          jsonEncode({'error': e.toString(), 'success': false}),
+        );
+      }
+    });
   }
 
   /// Register the removeRule extension
   void _registerRemoveRule() {
-    developer.registerExtension(
-      InterceptifyConstants.removeRuleExtension,
-      (String method, Map<String, String> params) async {
-        try {
-          final ruleId = params['ruleId'];
-          if (ruleId == null) {
-            return developer.ServiceExtensionResponse.result(
-              jsonEncode({
-                'error': 'ruleId parameter required',
-                'success': false,
-              }),
-            );
-          }
-
-          final success = _ruleManager.removeRule(ruleId);
-
+    developer.registerExtension(InterceptifyConstants.removeRuleExtension, (
+      String method,
+      Map<String, String> params,
+    ) async {
+      try {
+        final ruleId = params['ruleId'];
+        if (ruleId == null) {
           return developer.ServiceExtensionResponse.result(
             jsonEncode({
-              'success': success,
-              'message': success ? 'Rule removed' : 'Rule not found',
-            }),
-          );
-        } catch (e) {
-          InterceptifyLogger.error('Error in removeRule', e);
-          return developer.ServiceExtensionResponse.result(
-            jsonEncode({
-              'error': e.toString(),
+              'error': 'ruleId parameter required',
               'success': false,
             }),
           );
         }
-      },
-    );
+
+        final success = _ruleManager.removeRule(ruleId);
+
+        return developer.ServiceExtensionResponse.result(
+          jsonEncode({
+            'success': success,
+            'message': success ? 'Rule removed' : 'Rule not found',
+          }),
+        );
+      } catch (e) {
+        InterceptifyLogger.error('Error in removeRule', e);
+        return developer.ServiceExtensionResponse.result(
+          jsonEncode({'error': e.toString(), 'success': false}),
+        );
+      }
+    });
   }
 
   /// Register the clearRules extension
   void _registerClearRules() {
-    developer.registerExtension(
-      InterceptifyConstants.clearRulesExtension,
-      (String method, Map<String, String> params) async {
-        try {
-          _ruleManager.clearRules();
+    developer.registerExtension(InterceptifyConstants.clearRulesExtension, (
+      String method,
+      Map<String, String> params,
+    ) async {
+      try {
+        _ruleManager.clearRules();
 
-          return developer.ServiceExtensionResponse.result(
-            jsonEncode({
-              'success': true,
-              'message': 'All rules cleared',
-            }),
-          );
-        } catch (e) {
-          InterceptifyLogger.error('Error in clearRules', e);
-          return developer.ServiceExtensionResponse.result(
-            jsonEncode({
-              'error': e.toString(),
-              'success': false,
-            }),
-          );
-        }
-      },
-    );
+        return developer.ServiceExtensionResponse.result(
+          jsonEncode({'success': true, 'message': 'All rules cleared'}),
+        );
+      } catch (e) {
+        InterceptifyLogger.error('Error in clearRules', e);
+        return developer.ServiceExtensionResponse.result(
+          jsonEncode({'error': e.toString(), 'success': false}),
+        );
+      }
+    });
   }
 
   /// Post a request event to DevTools
@@ -306,13 +271,10 @@ class DevtoolsBridge {
     }
 
     try {
-      developer.postEvent(
-        InterceptifyConstants.requestEventKind,
-        {
-          'request': request.toJson(),
-          'timestamp': DateTime.now().toIso8601String(),
-        },
-      );
+      developer.postEvent(InterceptifyConstants.requestEventKind, {
+        'request': request.toJson(),
+        'timestamp': DateTime.now().toIso8601String(),
+      });
     } catch (e) {
       InterceptifyLogger.warning('Failed to post request event: $e');
     }
@@ -331,38 +293,36 @@ class DevtoolsBridge {
     }
 
     try {
-      developer.postEvent(
-        InterceptifyConstants.responseEventKind,
-        {
-          'requestId': requestId,
-          'statusCode': statusCode,
-          'body': _serializeBody(body),
-          'headers': headers,
-          'duration': duration.inMilliseconds,
-          'timestamp': DateTime.now().toIso8601String(),
-        },
-      );
+      developer.postEvent(InterceptifyConstants.responseEventKind, {
+        'requestId': requestId,
+        'statusCode': statusCode,
+        'body': _serializeBody(body),
+        'headers': headers,
+        'duration': duration.inMilliseconds,
+        'timestamp': DateTime.now().toIso8601String(),
+      });
     } catch (e) {
       InterceptifyLogger.warning('Failed to post response event: $e');
     }
   }
 
   /// Post an error event to DevTools
-  void postErrorEvent(String requestId, String errorMessage, String? errorType) {
+  void postErrorEvent(
+    String requestId,
+    String errorMessage,
+    String? errorType,
+  ) {
     if (!developer.extensionStreamHasListener) {
       return; // No DevTools listening, skip to avoid overhead
     }
 
     try {
-      developer.postEvent(
-        InterceptifyConstants.errorEventKind,
-        {
-          'requestId': requestId,
-          'errorMessage': errorMessage,
-          'errorType': errorType,
-          'timestamp': DateTime.now().toIso8601String(),
-        },
-      );
+      developer.postEvent(InterceptifyConstants.errorEventKind, {
+        'requestId': requestId,
+        'errorMessage': errorMessage,
+        'errorType': errorType,
+        'timestamp': DateTime.now().toIso8601String(),
+      });
     } catch (e) {
       InterceptifyLogger.warning('Failed to post error event: $e');
     }
@@ -395,18 +355,12 @@ class DevtoolsBridge {
           _ruleManager.setEnabled(enabled);
 
           return developer.ServiceExtensionResponse.result(
-            jsonEncode({
-              'success': true,
-              'enabled': enabled,
-            }),
+            jsonEncode({'success': true, 'enabled': enabled}),
           );
         } catch (e) {
           InterceptifyLogger.error('Error in toggleInterception', e);
           return developer.ServiceExtensionResponse.result(
-            jsonEncode({
-              'error': e.toString(),
-              'success': false,
-            }),
+            jsonEncode({'error': e.toString(), 'success': false}),
           );
         }
       },
@@ -419,10 +373,7 @@ class DevtoolsBridge {
       InterceptifyConstants.getInterceptionStatusExtension,
       (String method, Map<String, String> params) async {
         return developer.ServiceExtensionResponse.result(
-          jsonEncode({
-            'enabled': _ruleManager.enabled,
-            'success': true,
-          }),
+          jsonEncode({'enabled': _ruleManager.enabled, 'success': true}),
         );
       },
     );
@@ -430,219 +381,183 @@ class DevtoolsBridge {
 
   /// Register the togglePauseAll extension
   void _registerTogglePauseAll() {
-    developer.registerExtension(
-      InterceptifyConstants.togglePauseAllExtension,
-      (String method, Map<String, String> params) async {
-        try {
-          final pause = params['pause'] == 'true';
-          _ruleManager.setPauseAllRequests(pause);
+    developer.registerExtension(InterceptifyConstants.togglePauseAllExtension, (
+      String method,
+      Map<String, String> params,
+    ) async {
+      try {
+        final pause = params['pause'] == 'true';
+        _ruleManager.setPauseAllRequests(pause);
 
-          return developer.ServiceExtensionResponse.result(
-            jsonEncode({
-              'success': true,
-              'pause': pause,
-            }),
-          );
-        } catch (e) {
-          InterceptifyLogger.error('Error in togglePauseAll', e);
-          return developer.ServiceExtensionResponse.result(
-            jsonEncode({
-              'error': e.toString(),
-              'success': false,
-            }),
-          );
-        }
-      },
-    );
+        return developer.ServiceExtensionResponse.result(
+          jsonEncode({'success': true, 'pause': pause}),
+        );
+      } catch (e) {
+        InterceptifyLogger.error('Error in togglePauseAll', e);
+        return developer.ServiceExtensionResponse.result(
+          jsonEncode({'error': e.toString(), 'success': false}),
+        );
+      }
+    });
   }
 
   /// Register the retryRequest extension
   void _registerRetryRequest() {
-    developer.registerExtension(
-      'ext.interceptify.retryRequest',
-      (String method, Map<String, String> params) async {
-        try {
-          final requestJson = params['request'];
-          if (requestJson == null) {
-            return developer.ServiceExtensionResponse.result(
-              jsonEncode({
-                'error': 'request parameter required',
-                'success': false,
-              }),
-            );
-          }
-
-          final data = jsonDecode(requestJson) as Map<String, dynamic>;
-          final retryMethod = data['method'] as String? ?? 'GET';
-          final retryUrl = data['url'] as String;
-          final retryHeaders = data['headers'] as Map<String, dynamic>?;
-          final retryQueryParams =
-              data['queryParameters'] as Map<String, dynamic>?;
-          final retryBody = data['body'];
-
-          // Get registered Dio instances
-          if (_dioInstances.isEmpty) {
-            return developer.ServiceExtensionResponse.result(
-              jsonEncode({
-                'error':
-                    'No Dio instances registered for retry. Call Interceptify.registerDioInstance(dio) in your app.',
-                'success': false,
-              }),
-            );
-          }
-
-          // Use the first registered Dio instance
-          final dio = _dioInstances.first;
-
-          // Trigger the request in the background
-          // ignore: unawaited_futures
-          dio.request(
-            retryUrl,
-            data: retryBody,
-            queryParameters: retryQueryParams,
-            options: Options(
-              method: retryMethod,
-              headers: retryHeaders,
-            ),
-          );
-
+    developer.registerExtension('ext.interceptify.retryRequest', (
+      String method,
+      Map<String, String> params,
+    ) async {
+      try {
+        final requestJson = params['request'];
+        if (requestJson == null) {
           return developer.ServiceExtensionResponse.result(
             jsonEncode({
-              'success': true,
-              'message': 'Retry triggered',
-            }),
-          );
-        } catch (e) {
-          InterceptifyLogger.error('Error in retryRequest', e);
-          return developer.ServiceExtensionResponse.result(
-            jsonEncode({
-              'error': e.toString(),
+              'error': 'request parameter required',
               'success': false,
             }),
           );
         }
-      },
-    );
+
+        final data = jsonDecode(requestJson) as Map<String, dynamic>;
+        final retryMethod = data['method'] as String? ?? 'GET';
+        final retryUrl = data['url'] as String;
+        final retryHeaders = data['headers'] as Map<String, dynamic>?;
+        final retryQueryParams =
+            data['queryParameters'] as Map<String, dynamic>?;
+        final retryBody = data['body'];
+
+        // Get registered Dio instances
+        if (_dioInstances.isEmpty) {
+          return developer.ServiceExtensionResponse.result(
+            jsonEncode({
+              'error':
+                  'No Dio instances registered for retry. Call Interceptify.registerDioInstance(dio) in your app.',
+              'success': false,
+            }),
+          );
+        }
+
+        // Use the first registered Dio instance
+        final dio = _dioInstances.first;
+
+        // Trigger the request in the background
+        // ignore: unawaited_futures
+        dio.request(
+          retryUrl,
+          data: retryBody,
+          queryParameters: retryQueryParams,
+          options: Options(method: retryMethod, headers: retryHeaders),
+        );
+
+        return developer.ServiceExtensionResponse.result(
+          jsonEncode({'success': true, 'message': 'Retry triggered'}),
+        );
+      } catch (e) {
+        InterceptifyLogger.error('Error in retryRequest', e);
+        return developer.ServiceExtensionResponse.result(
+          jsonEncode({'error': e.toString(), 'success': false}),
+        );
+      }
+    });
   }
 
   /// Register the continueResponse extension
   void _registerContinueResponse() {
-    developer.registerExtension(
-      'ext.interceptify.continueResponse',
-      (String method, Map<String, String> params) async {
-        try {
-          final requestId = params['requestId'];
-          if (requestId == null) {
-            return developer.ServiceExtensionResponse.result(
-              jsonEncode({
-                'error': 'requestId parameter required',
-                'success': false,
-              }),
-            );
-          }
-
-          Map<String, dynamic>? modifications;
-          if (params.containsKey('modifications')) {
-            modifications =
-                jsonDecode(params['modifications']!) as Map<String, dynamic>;
-          }
-
-          final success =
-              _pendingRequestManager.continueResponse(requestId, modifications);
-
+    developer.registerExtension('ext.interceptify.continueResponse', (
+      String method,
+      Map<String, String> params,
+    ) async {
+      try {
+        final requestId = params['requestId'];
+        if (requestId == null) {
           return developer.ServiceExtensionResponse.result(
             jsonEncode({
-              'success': success,
-            }),
-          );
-        } catch (e) {
-          InterceptifyLogger.error('Error in continueResponse', e);
-          return developer.ServiceExtensionResponse.result(
-            jsonEncode({
-              'error': e.toString(),
+              'error': 'requestId parameter required',
               'success': false,
             }),
           );
         }
-      },
-    );
+
+        Map<String, dynamic>? modifications;
+        if (params.containsKey('modifications')) {
+          modifications =
+              jsonDecode(params['modifications']!) as Map<String, dynamic>;
+        }
+
+        final success = _pendingRequestManager.continueResponse(
+          requestId,
+          modifications,
+        );
+
+        return developer.ServiceExtensionResponse.result(
+          jsonEncode({'success': success}),
+        );
+      } catch (e) {
+        InterceptifyLogger.error('Error in continueResponse', e);
+        return developer.ServiceExtensionResponse.result(
+          jsonEncode({'error': e.toString(), 'success': false}),
+        );
+      }
+    });
   }
 
   /// Register the togglePauseAllResponses extension
   void _registerTogglePauseAllResponses() {
-    developer.registerExtension(
-      'ext.interceptify.togglePauseAllResponses',
-      (String method, Map<String, String> params) async {
-        try {
-          final pause = params['pause'] == 'true';
-          _ruleManager.setPauseAllResponses(pause);
+    developer.registerExtension('ext.interceptify.togglePauseAllResponses', (
+      String method,
+      Map<String, String> params,
+    ) async {
+      try {
+        final pause = params['pause'] == 'true';
+        _ruleManager.setPauseAllResponses(pause);
 
-          return developer.ServiceExtensionResponse.result(
-            jsonEncode({
-              'success': true,
-              'pause': pause,
-            }),
-          );
-        } catch (e) {
-          InterceptifyLogger.error('Error in togglePauseAllResponses', e);
-          return developer.ServiceExtensionResponse.result(
-            jsonEncode({
-              'error': e.toString(),
-              'success': false,
-            }),
-          );
-        }
-      },
-    );
+        return developer.ServiceExtensionResponse.result(
+          jsonEncode({'success': true, 'pause': pause}),
+        );
+      } catch (e) {
+        InterceptifyLogger.error('Error in togglePauseAllResponses', e);
+        return developer.ServiceExtensionResponse.result(
+          jsonEncode({'error': e.toString(), 'success': false}),
+        );
+      }
+    });
   }
 
   /// Register the getTimeout extension
   void _registerGetTimeout() {
-    developer.registerExtension(
-      InterceptifyConstants.getTimeoutExtension,
-      (String method, Map<String, String> params) async {
-        return developer.ServiceExtensionResponse.result(
-          jsonEncode({
-            'timeout': _ruleManager.timeoutSeconds,
-            'success': true,
-          }),
-        );
-      },
-    );
+    developer.registerExtension(InterceptifyConstants.getTimeoutExtension, (
+      String method,
+      Map<String, String> params,
+    ) async {
+      return developer.ServiceExtensionResponse.result(
+        jsonEncode({'timeout': _ruleManager.timeoutSeconds, 'success': true}),
+      );
+    });
   }
 
   /// Register the setTimeout extension
   void _registerSetTimeout() {
-    developer.registerExtension(
-      InterceptifyConstants.setTimeoutExtension,
-      (String method, Map<String, String> params) async {
-        try {
-          final timeout = int.tryParse(params['timeout'] ?? '');
-          if (timeout != null) {
-            _ruleManager.setTimeoutSeconds(timeout);
-            return developer.ServiceExtensionResponse.result(
-              jsonEncode({
-                'success': true,
-                'timeout': timeout,
-              }),
-            );
-          }
+    developer.registerExtension(InterceptifyConstants.setTimeoutExtension, (
+      String method,
+      Map<String, String> params,
+    ) async {
+      try {
+        final timeout = int.tryParse(params['timeout'] ?? '');
+        if (timeout != null) {
+          _ruleManager.setTimeoutSeconds(timeout);
           return developer.ServiceExtensionResponse.result(
-            jsonEncode({
-              'error': 'Invalid timeout value',
-              'success': false,
-            }),
-          );
-        } catch (e) {
-          InterceptifyLogger.error('Error in setTimeout', e);
-          return developer.ServiceExtensionResponse.result(
-            jsonEncode({
-              'error': e.toString(),
-              'success': false,
-            }),
+            jsonEncode({'success': true, 'timeout': timeout}),
           );
         }
-      },
-    );
+        return developer.ServiceExtensionResponse.result(
+          jsonEncode({'error': 'Invalid timeout value', 'success': false}),
+        );
+      } catch (e) {
+        InterceptifyLogger.error('Error in setTimeout', e);
+        return developer.ServiceExtensionResponse.result(
+          jsonEncode({'error': e.toString(), 'success': false}),
+        );
+      }
+    });
   }
 }

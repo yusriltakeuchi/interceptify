@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:devtools_app_shared/service.dart';
 import 'package:interceptify_devtools/utils.dart';
 import 'package:vm_service/vm_service.dart';
@@ -17,7 +18,7 @@ class InterceptifyVMServiceClient {
       final response = await serviceManager.callServiceExtensionOnMainIsolate(
         InterceptifyConstants.getPendingRequestsExtension,
       );
-      
+
       final result = response.json?['result'] as List?;
       if (result != null) {
         return List<Map<String, dynamic>>.from(
@@ -26,7 +27,7 @@ class InterceptifyVMServiceClient {
       }
       return [];
     } catch (e) {
-      print('Error getting pending requests: $e');
+      debugPrint('Error getting pending requests: $e');
       return [];
     }
   }
@@ -39,8 +40,7 @@ class InterceptifyVMServiceClient {
     try {
       final params = {
         'requestId': requestId,
-        if (modifications != null)
-          'modifications': jsonEncode(modifications),
+        if (modifications != null) 'modifications': jsonEncode(modifications),
       };
 
       final response = await serviceManager.callServiceExtensionOnMainIsolate(
@@ -50,7 +50,7 @@ class InterceptifyVMServiceClient {
 
       return response.json?['success'] == true;
     } catch (e) {
-      print('Error continuing request: $e');
+      debugPrint('Error continuing request: $e');
       return false;
     }
   }
@@ -65,7 +65,7 @@ class InterceptifyVMServiceClient {
 
       return response.json?['success'] == true;
     } catch (e) {
-      print('Error canceling request: $e');
+      debugPrint('Error canceling request: $e');
       return false;
     }
   }
@@ -80,7 +80,7 @@ class InterceptifyVMServiceClient {
 
       return response.json?['success'] == true;
     } catch (e) {
-      print('Error adding rule: $e');
+      debugPrint('Error adding rule: $e');
       return false;
     }
   }
@@ -95,7 +95,7 @@ class InterceptifyVMServiceClient {
 
       return response.json?['success'] == true;
     } catch (e) {
-      print('Error removing rule: $e');
+      debugPrint('Error removing rule: $e');
       return false;
     }
   }
@@ -109,7 +109,7 @@ class InterceptifyVMServiceClient {
 
       return response.json?['success'] == true;
     } catch (e) {
-      print('Error clearing rules: $e');
+      debugPrint('Error clearing rules: $e');
       return false;
     }
   }
@@ -124,7 +124,7 @@ class InterceptifyVMServiceClient {
 
       return response.json?['success'] == true;
     } catch (e) {
-      print('Error toggling interception: $e');
+      debugPrint('Error toggling interception: $e');
       return false;
     }
   }
@@ -138,7 +138,7 @@ class InterceptifyVMServiceClient {
 
       return response.json?['enabled'] == true;
     } catch (e) {
-      print('Error getting interception status: $e');
+      debugPrint('Error getting interception status: $e');
       return true; // Default to enabled
     }
   }
@@ -153,7 +153,7 @@ class InterceptifyVMServiceClient {
 
       return response.json?['success'] == true;
     } catch (e) {
-      print('Error toggling pause all: $e');
+      debugPrint('Error toggling pause all: $e');
       return false;
     }
   }
@@ -168,14 +168,16 @@ class InterceptifyVMServiceClient {
 
       return response.json?['success'] == true;
     } catch (e) {
-      print('Error toggling pause all responses: $e');
+      debugPrint('Error toggling pause all responses: $e');
       return false;
     }
   }
 
   /// Continue a paused response
-  Future<bool> continueResponse(String requestId,
-      {Map<String, dynamic>? modifications}) async {
+  Future<bool> continueResponse(
+    String requestId, {
+    Map<String, dynamic>? modifications,
+  }) async {
     try {
       final params = {
         'requestId': requestId,
@@ -189,7 +191,7 @@ class InterceptifyVMServiceClient {
 
       return response.json?['success'] == true;
     } catch (e) {
-      print('Error continuing response: $e');
+      debugPrint('Error continuing response: $e');
       return false;
     }
   }
@@ -204,7 +206,7 @@ class InterceptifyVMServiceClient {
 
       return response.json?['success'] == true;
     } catch (e) {
-      print('Error retrying request: $e');
+      debugPrint('Error retrying request: $e');
       return false;
     }
   }
@@ -215,10 +217,10 @@ class InterceptifyVMServiceClient {
       final response = await serviceManager.callServiceExtensionOnMainIsolate(
         InterceptifyConstants.getTimeoutExtension,
       );
-      
+
       return response.json?['timeout'] as int? ?? 30;
     } catch (e) {
-      print('Error getting timeout: $e');
+      debugPrint('Error getting timeout: $e');
       return 30;
     }
   }
@@ -233,7 +235,7 @@ class InterceptifyVMServiceClient {
 
       return response.json?['success'] == true;
     } catch (e) {
-      print('Error setting timeout: $e');
+      debugPrint('Error setting timeout: $e');
       return false;
     }
   }

@@ -15,10 +15,7 @@ class RequestModifier {
   }
 
   /// Apply body modification to request options
-  static void applyBodyModification(
-    RequestOptions options,
-    dynamic newBody,
-  ) {
+  static void applyBodyModification(RequestOptions options, dynamic newBody) {
     options.data = newBody;
   }
 

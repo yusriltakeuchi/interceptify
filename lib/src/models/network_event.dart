@@ -14,10 +14,7 @@ sealed class NetworkEvent {
 class RequestEvent extends NetworkEvent {
   final InterceptedRequest request;
 
-  RequestEvent({
-    required this.request,
-    required super.timestamp,
-  });
+  RequestEvent({required this.request, required super.timestamp});
 
   @override
   Map<String, dynamic> toJson() {
@@ -31,7 +28,8 @@ class RequestEvent extends NetworkEvent {
   factory RequestEvent.fromJson(Map<String, dynamic> json) {
     return RequestEvent(
       request: InterceptedRequest.fromJson(
-          json['request'] as Map<String, dynamic>),
+        json['request'] as Map<String, dynamic>,
+      ),
       timestamp: DateTime.parse(json['timestamp'] as String),
     );
   }
@@ -41,10 +39,7 @@ class RequestEvent extends NetworkEvent {
 class ResponseEvent extends NetworkEvent {
   final InterceptedResponse response;
 
-  ResponseEvent({
-    required this.response,
-    required super.timestamp,
-  });
+  ResponseEvent({required this.response, required super.timestamp});
 
   @override
   Map<String, dynamic> toJson() {
@@ -58,7 +53,8 @@ class ResponseEvent extends NetworkEvent {
   factory ResponseEvent.fromJson(Map<String, dynamic> json) {
     return ResponseEvent(
       response: InterceptedResponse.fromJson(
-          json['response'] as Map<String, dynamic>),
+        json['response'] as Map<String, dynamic>,
+      ),
       timestamp: DateTime.parse(json['timestamp'] as String),
     );
   }

@@ -5,10 +5,7 @@ import '../services/api_service.dart';
 class HomeScreen extends StatefulWidget {
   final Dio dio;
 
-  const HomeScreen({
-    required this.dio,
-    super.key,
-  });
+  const HomeScreen({required this.dio, super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -293,10 +290,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Text(
                   '💡 Tip: Each request appears in the Interceptify DevTools tab.\n'
                   'You can inspect headers, request body, response data, and timing information.',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.amber.shade900,
-                  ),
+                  style: TextStyle(fontSize: 13, color: Colors.amber.shade900),
                 ),
               ),
             ],

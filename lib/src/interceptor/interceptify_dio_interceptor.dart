@@ -20,9 +20,9 @@ class InterceptifyDioInterceptor extends QueuedInterceptor {
     required PendingRequestManager pendingRequestManager,
     required RuleManager ruleManager,
     required DevtoolsBridge devtoolsBridge,
-  })  : _pendingRequestManager = pendingRequestManager,
-        _ruleManager = ruleManager,
-        _devtoolsBridge = devtoolsBridge;
+  }) : _pendingRequestManager = pendingRequestManager,
+       _ruleManager = ruleManager,
+       _devtoolsBridge = devtoolsBridge;
 
   /// Called when a request is about to be sent
   @override
@@ -46,12 +46,13 @@ class InterceptifyDioInterceptor extends QueuedInterceptor {
 
       // Capture request details
       final headers = Map<String, dynamic>.from(options.headers);
-      
+
       // Add common headers if not present (helps with visibility in DevTools)
       if (options.contentType != null && !headers.containsKey('content-type')) {
         headers['content-type'] = options.contentType;
       }
-      if (options.responseType.toString().isNotEmpty && !headers.containsKey('accept')) {
+      if (options.responseType.toString().isNotEmpty &&
+          !headers.containsKey('accept')) {
         headers['accept'] = options.responseType.toString();
       }
 
@@ -75,12 +76,15 @@ class InterceptifyDioInterceptor extends QueuedInterceptor {
       // If should be paused, wait for continuation
       if (shouldPause) {
         InterceptifyLogger.info(
-            'Request matched pause rule: ${options.method} ${options.uri}');
+          'Request matched pause rule: ${options.method} ${options.uri}',
+        );
 
         // Mark as paused and wait for continuation
         try {
-          final modifications =
-              await _pendingRequestManager.pauseRequest(interceptedRequest, timeout: Duration(seconds: _ruleManager.timeoutSeconds));
+          final modifications = await _pendingRequestManager.pauseRequest(
+            interceptedRequest,
+            timeout: Duration(seconds: _ruleManager.timeoutSeconds),
+          );
 
           // Apply modifications if provided
           if (modifications != null) {
@@ -92,24 +96,30 @@ class InterceptifyDioInterceptor extends QueuedInterceptor {
               method: options.method,
               url: options.uri.toString(),
               headers: Map<String, dynamic>.from(options.headers),
-              queryParameters: Map<String, dynamic>.from(options.queryParameters),
+              queryParameters: Map<String, dynamic>.from(
+                options.queryParameters,
+              ),
               body: options.data,
               paused: false, // Mark as no longer paused
             );
             _devtoolsBridge.postRequestEvent(updatedRequest);
           } else {
             // Even if no modifications, mark as no longer paused in DevTools
-            _devtoolsBridge.postRequestEvent(interceptedRequest.copyWith(paused: false));
+            _devtoolsBridge.postRequestEvent(
+              interceptedRequest.copyWith(paused: false),
+            );
           }
         } catch (e) {
           InterceptifyLogger.error('Error while request was paused', e);
           // If error occurred (e.g., cancellation), propagate it
-          return handler.reject(DioException(
-            requestOptions: options,
-            error: e,
-            type: DioExceptionType.unknown,
-            message: 'Request was canceled',
-          ));
+          return handler.reject(
+            DioException(
+              requestOptions: options,
+              error: e,
+              type: DioExceptionType.unknown,
+              message: 'Request was canceled',
+            ),
+          );
         }
       }
 
@@ -134,8 +144,8 @@ class InterceptifyDioInterceptor extends QueuedInterceptor {
     try {
       final requestId =
           response.requestOptions.extra['interceptify_request_id'] as String?;
-      final startTime = response.requestOptions.extra['interceptify_start_time']
-          as DateTime?;
+      final startTime =
+          response.requestOptions.extra['interceptify_start_time'] as DateTime?;
 
       if (requestId != null && startTime != null) {
         final duration = DateTime.now().difference(startTime);
@@ -145,46 +155,61 @@ class InterceptifyDioInterceptor extends QueuedInterceptor {
           requestId,
           response.statusCode,
           response.data,
-          response.headers.map.map((key, value) =>
-              MapEntry(key, value.isNotEmpty ? value.first : null)),
+          response.headers.map.map(
+            (key, value) =>
+                MapEntry(key, value.isNotEmpty ? value.first : null),
+          ),
           duration,
         );
 
         InterceptifyLogger.info(
-            'Response received: $requestId (${response.statusCode}) - ${duration.inMilliseconds}ms');
+          'Response received: $requestId (${response.statusCode}) - ${duration.inMilliseconds}ms',
+        );
 
         // Check if we should pause on response
         if (_ruleManager.enabled && _ruleManager.pauseAllResponses) {
-          InterceptifyLogger.info('Response matched pause rule for request: $requestId');
-          
+          InterceptifyLogger.info(
+            'Response matched pause rule for request: $requestId',
+          );
+
           try {
             // Post updated request event to show it's now paused on response
-            _devtoolsBridge.postRequestEvent(InterceptedRequest(
-              id: requestId,
-              method: response.requestOptions.method,
-              url: response.requestOptions.uri.toString(),
-              headers: Map<String, dynamic>.from(response.requestOptions.headers),
-              queryParameters: Map<String, dynamic>.from(response.requestOptions.queryParameters),
-              body: response.requestOptions.data,
-              timestamp: startTime,
-              paused: true,
-            ));
+            _devtoolsBridge.postRequestEvent(
+              InterceptedRequest(
+                id: requestId,
+                method: response.requestOptions.method,
+                url: response.requestOptions.uri.toString(),
+                headers: Map<String, dynamic>.from(
+                  response.requestOptions.headers,
+                ),
+                queryParameters: Map<String, dynamic>.from(
+                  response.requestOptions.queryParameters,
+                ),
+                body: response.requestOptions.data,
+                timestamp: startTime,
+                paused: true,
+              ),
+            );
 
             // Post initial response data to DevTools so user can edit it
             _devtoolsBridge.postResponseEvent(
               requestId,
               response.statusCode,
               response.data,
-              response.headers.map.map((key, value) =>
-                  MapEntry(key, value.isNotEmpty ? value.first : null)),
+              response.headers.map.map(
+                (key, value) =>
+                    MapEntry(key, value.isNotEmpty ? value.first : null),
+              ),
               DateTime.now().difference(startTime),
             );
 
             final modifications = await _pendingRequestManager.pauseResponse(
               requestId,
               response.data,
-              response.headers.map.map((key, value) =>
-                  MapEntry(key, value.isNotEmpty ? value.first : null)),
+              response.headers.map.map(
+                (key, value) =>
+                    MapEntry(key, value.isNotEmpty ? value.first : null),
+              ),
               response.statusCode ?? 200,
               timeout: Duration(seconds: _ruleManager.timeoutSeconds),
             );
@@ -197,7 +222,9 @@ class InterceptifyDioInterceptor extends QueuedInterceptor {
               if (modifications.containsKey('body')) {
                 response.data = modifications['body'];
               }
-              InterceptifyLogger.info('Applied modifications to response: $requestId');
+              InterceptifyLogger.info(
+                'Applied modifications to response: $requestId',
+              );
             }
 
             // Post UPDATED response event to DevTools
@@ -206,22 +233,30 @@ class InterceptifyDioInterceptor extends QueuedInterceptor {
               requestId,
               response.statusCode,
               response.data,
-              response.headers.map.map((key, value) =>
-                  MapEntry(key, value.isNotEmpty ? value.first : null)),
+              response.headers.map.map(
+                (key, value) =>
+                    MapEntry(key, value.isNotEmpty ? value.first : null),
+              ),
               duration,
             );
 
             // Also update request status to unpaused while preserving existing data
-            _devtoolsBridge.postRequestEvent(InterceptedRequest(
-              id: requestId,
-              method: response.requestOptions.method,
-              url: response.requestOptions.uri.toString(),
-              headers: Map<String, dynamic>.from(response.requestOptions.headers),
-              queryParameters: Map<String, dynamic>.from(response.requestOptions.queryParameters),
-              body: response.requestOptions.data,
-              timestamp: startTime,
-              paused: false,
-            ));
+            _devtoolsBridge.postRequestEvent(
+              InterceptedRequest(
+                id: requestId,
+                method: response.requestOptions.method,
+                url: response.requestOptions.uri.toString(),
+                headers: Map<String, dynamic>.from(
+                  response.requestOptions.headers,
+                ),
+                queryParameters: Map<String, dynamic>.from(
+                  response.requestOptions.queryParameters,
+                ),
+                body: response.requestOptions.data,
+                timestamp: startTime,
+                paused: false,
+              ),
+            );
           } catch (e) {
             InterceptifyLogger.error('Error while response was paused', e);
           }
@@ -258,7 +293,8 @@ class InterceptifyDioInterceptor extends QueuedInterceptor {
         );
 
         InterceptifyLogger.error(
-            'Request error: $requestId - ${err.type.name} - ${err.message}');
+          'Request error: $requestId - ${err.type.name} - ${err.message}',
+        );
       }
     } catch (e) {
       InterceptifyLogger.error('Error in onError', e);

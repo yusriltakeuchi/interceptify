@@ -13,9 +13,7 @@ class ApiService {
   /// Fetch all posts
   Future<List<Post>> getPosts() async {
     try {
-      final response = await _dio.get<List<dynamic>>(
-        '$baseUrl/posts',
-      );
+      final response = await _dio.get<List<dynamic>>('$baseUrl/posts');
 
       if (response.statusCode == 200) {
         return (response.data ?? [])
@@ -53,11 +51,7 @@ class ApiService {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
         '$baseUrl/posts',
-        data: {
-          'userId': userId,
-          'title': title,
-          'body': body,
-        },
+        data: {'userId': userId, 'title': title, 'body': body},
       );
 
       if (response.statusCode == 201) {
@@ -72,9 +66,7 @@ class ApiService {
   /// Fetch all users
   Future<List<User>> getUsers() async {
     try {
-      final response = await _dio.get<List<dynamic>>(
-        '$baseUrl/users',
-      );
+      final response = await _dio.get<List<dynamic>>('$baseUrl/users');
 
       if (response.statusCode == 200) {
         return (response.data ?? [])
@@ -130,10 +122,7 @@ class ApiService {
     try {
       final response = await _dio.put<Map<String, dynamic>>(
         '$baseUrl/posts/$id',
-        data: {
-          'title': title,
-          'body': body,
-        },
+        data: {'title': title, 'body': body},
       );
 
       if (response.statusCode == 200) {
