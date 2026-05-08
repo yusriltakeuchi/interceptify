@@ -144,30 +144,38 @@ class _InterceptifyExtensionScreenState
             activeColor: Colors.green,
             onChanged: (v) async {
               if (await _vmServiceClient?.toggleInterception(v) ?? false) {
-                setState(() => _interceptionEnabled = v);
+                setState(() {
+                  _interceptionEnabled = v;
+                  if (!v) {
+                    _pauseAllEnabled = false;
+                    _pauseAllResponsesEnabled = false;
+                  }
+                });
               }
             },
           ),
-          _buildActionSwitch(
-            label: 'Pause Req',
-            value: _pauseAllEnabled,
-            activeColor: Colors.orange,
-            onChanged: (v) async {
-              if (await _vmServiceClient?.togglePauseAll(v) ?? false) {
-                setState(() => _pauseAllEnabled = v);
-              }
-            },
-          ),
-          _buildActionSwitch(
-            label: 'Pause Res',
-            value: _pauseAllResponsesEnabled,
-            activeColor: Colors.deepOrange,
-            onChanged: (v) async {
-              if (await _vmServiceClient?.togglePauseAllResponses(v) ?? false) {
-                setState(() => _pauseAllResponsesEnabled = v);
-              }
-            },
-          ),
+          if (_interceptionEnabled) ...[
+            _buildActionSwitch(
+              label: 'Pause Req',
+              value: _pauseAllEnabled,
+              activeColor: Colors.orange,
+              onChanged: (v) async {
+                if (await _vmServiceClient?.togglePauseAll(v) ?? false) {
+                  setState(() => _pauseAllEnabled = v);
+                }
+              },
+            ),
+            _buildActionSwitch(
+              label: 'Pause Res',
+              value: _pauseAllResponsesEnabled,
+              activeColor: Colors.deepOrange,
+              onChanged: (v) async {
+                if (await _vmServiceClient?.togglePauseAllResponses(v) ?? false) {
+                  setState(() => _pauseAllResponsesEnabled = v);
+                }
+              },
+            ),
+          ],
           const SizedBox(width: 8),
         ],
       ),

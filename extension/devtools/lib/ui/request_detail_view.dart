@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../services/event_listener.dart';
 import '../services/vm_service_client.dart';
 
@@ -184,6 +185,38 @@ class _RequestDetailViewState extends State<RequestDetailView>
     }
   }
 
+  String _buildCurlCommand() {
+    final req = widget.request;
+    final buf = StringBuffer();
+    buf.write('curl -X ${req.method}');
+    if (req.headers != null) {
+      req.headers!.forEach((k, v) {
+        final esc = v.toString().replaceAll("'", "'\\''");
+        buf.write(" \\\n  -H '$k: $esc'");
+      });
+    }
+    if (req.body != null) {
+      String body;
+      if (req.body is Map || req.body is List) {
+        body = jsonEncode(req.body);
+      } else {
+        body = req.body.toString();
+      }
+      final esc = body.replaceAll("'", "'\\''");
+      buf.write(" \\\n  -d '$esc'");
+    }
+    String url = req.url;
+    if (req.queryParameters != null && req.queryParameters!.isNotEmpty) {
+      final params = req.queryParameters!.entries
+          .map((e) =>
+              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value.toString())}')
+          .join('&');
+      url = '$url?$params';
+    }
+    buf.write(" \\\n  '$url'");
+    return buf.toString();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -247,6 +280,23 @@ class _RequestDetailViewState extends State<RequestDetailView>
                         overflow: TextOverflow.ellipsis,
                       ),
               ),
+              if (!_isEditing)
+                IconButton(
+                  icon: const Icon(Icons.terminal, size: 18),
+                  tooltip: 'Copy as cURL',
+                  onPressed: () async {
+                    final curl = _buildCurlCommand();
+                    await Clipboard.setData(ClipboardData(text: curl));
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('cURL copied to clipboard'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  },
+                ),
               if (!_isEditing &&
                   (widget.response != null || widget.error != null))
                 IconButton(
@@ -304,10 +354,10 @@ class _RequestDetailViewState extends State<RequestDetailView>
     Color color;
     switch (method.toUpperCase()) {
       case 'GET':
-        color = Colors.green;
+        color = Colors.blue;
         break;
       case 'POST':
-        color = Colors.blue;
+        color = Colors.green;
         break;
       case 'PUT':
         color = Colors.orange;
@@ -677,7 +727,22 @@ class _RequestDetailViewState extends State<RequestDetailView>
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [Container(child: JsonColorViewer(data: data))],
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF1A1A2E)
+                : const Color(0xFFF5F7FA),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: Theme.of(context).dividerColor.withOpacity(0.5),
+            ),
+          ),
+          child: JsonColorViewer(data: data),
+        ),
+      ],
     );
   }
 
@@ -820,7 +885,43 @@ class JsonColorViewer extends StatelessWidget {
   Widget build(BuildContext context) {
     if (data == null)
       return const Text('null', style: TextStyle(color: Colors.grey));
-    return SelectionArea(child: JsonNodeViewer(data: data));
+      
+    return Stack(
+      children: [
+        SelectionArea(child: JsonNodeViewer(data: data)),
+        Positioned(
+          top: 0,
+          right: 0,
+          child: IconButton(
+            icon: const Icon(Icons.copy, size: 16),
+            tooltip: 'Copy JSON',
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            onPressed: () async {
+              String textToCopy;
+              if (data is String) {
+                textToCopy = data;
+              } else {
+                try {
+                  textToCopy = const JsonEncoder.withIndent('  ').convert(data);
+                } catch (_) {
+                  textToCopy = data.toString();
+                }
+              }
+              await Clipboard.setData(ClipboardData(text: textToCopy));
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('JSON copied to clipboard'),
+                    duration: Duration(seconds: 1),
+                  ),
+                );
+              }
+            },
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -844,6 +945,32 @@ class JsonNodeViewer extends StatefulWidget {
 
 class _JsonNodeViewerState extends State<JsonNodeViewer> {
   bool _expanded = true;
+  bool _isHovering = false;
+
+  void _copyToClipboard() async {
+    String textToCopy;
+    if (widget.data is String) {
+      textToCopy = widget.data;
+    } else if (widget.data is Map || widget.data is List) {
+      try {
+        textToCopy = const JsonEncoder.withIndent('  ').convert(widget.data);
+      } catch (_) {
+        textToCopy = widget.data.toString();
+      }
+    } else {
+      textToCopy = widget.data.toString();
+    }
+    
+    await Clipboard.setData(ClipboardData(text: textToCopy));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Node copied'),
+          duration: Duration(seconds: 1),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -896,37 +1023,48 @@ class _JsonNodeViewerState extends State<JsonNodeViewer> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GestureDetector(
-            onTap: () => setState(() => _expanded = !_expanded),
-            behavior: HitTestBehavior.opaque,
-            child: Padding(
-              padding: EdgeInsets.only(left: widget.indent * 16.0),
-              child: Row(
-                children: [
-                  Icon(
-                    _expanded ? Icons.arrow_drop_down : Icons.arrow_right,
-                    size: 16,
-                    color: Colors.grey,
-                  ),
-                  buildKey(),
-                  Text(
-                    openingBrace,
-                    style: TextStyle(
-                      color: baseColor,
-                      fontFamily: 'monospace',
-                      fontSize: 12,
+          MouseRegion(
+            onEnter: (_) => setState(() => _isHovering = true),
+            onExit: (_) => setState(() => _isHovering = false),
+            child: GestureDetector(
+              onTap: () => setState(() => _expanded = !_expanded),
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding: EdgeInsets.only(left: widget.indent * 16.0),
+                child: Row(
+                  children: [
+                    Icon(
+                      _expanded ? Icons.arrow_drop_down : Icons.arrow_right,
+                      size: 16,
+                      color: Colors.grey,
                     ),
-                  ),
-                  if (!_expanded)
+                    buildKey(),
                     Text(
-                      ' ... $closingBrace${widget.isLast ? '' : ','}',
+                      openingBrace,
                       style: TextStyle(
-                        color: Colors.grey,
+                        color: baseColor,
                         fontFamily: 'monospace',
                         fontSize: 12,
                       ),
                     ),
-                ],
+                    if (!_expanded)
+                      Text(
+                        ' ... $closingBrace${widget.isLast ? '' : ','}',
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontFamily: 'monospace',
+                          fontSize: 12,
+                        ),
+                      ),
+                    if (_isHovering && widget.keyName != null) ...[
+                      const SizedBox(width: 8),
+                      InkWell(
+                        onTap: _copyToClipboard,
+                        child: const Icon(Icons.copy, size: 14, color: Colors.grey),
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -955,31 +1093,42 @@ class _JsonNodeViewerState extends State<JsonNodeViewer> {
     }
 
     // Primitive values
-    return Padding(
-      padding: EdgeInsets.only(left: widget.indent * 16.0 + 16.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          buildKey(),
-          Expanded(
-            child: _buildValueWidget(
-              widget.data,
-              stringColor,
-              numberColor,
-              boolColor,
-              baseColor,
-            ),
-          ),
-          if (!widget.isLast)
-            Text(
-              ',',
-              style: TextStyle(
-                color: baseColor,
-                fontFamily: 'monospace',
-                fontSize: 12,
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovering = true),
+      onExit: (_) => setState(() => _isHovering = false),
+      child: Padding(
+        padding: EdgeInsets.only(left: widget.indent * 16.0 + 16.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            buildKey(),
+            Expanded(
+              child: _buildValueWidget(
+                widget.data,
+                stringColor,
+                numberColor,
+                boolColor,
+                baseColor,
               ),
             ),
-        ],
+            if (!widget.isLast)
+              Text(
+                ',',
+                style: TextStyle(
+                  color: baseColor,
+                  fontFamily: 'monospace',
+                  fontSize: 12,
+                ),
+              ),
+            if (_isHovering && widget.keyName != null) ...[
+              const SizedBox(width: 8),
+              InkWell(
+                onTap: _copyToClipboard,
+                child: const Icon(Icons.copy, size: 14, color: Colors.grey),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
