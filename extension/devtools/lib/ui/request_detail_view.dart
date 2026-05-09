@@ -819,12 +819,12 @@ class _RequestDetailViewState extends State<RequestDetailView>
           width: double.infinity,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? const Color(0xFF1A1A2E)
-                : const Color(0xFFF5F7FA),
+            color: Theme.of(
+              context,
+            ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
             ),
           ),
           child: JsonColorViewer(data: viewerData),
@@ -1094,20 +1094,36 @@ class _JsonNodeViewerState extends State<JsonNodeViewer> {
       final closingBrace = isMap ? '}' : ']';
 
       if (children.isEmpty) {
-        return Padding(
-          padding: EdgeInsets.only(left: widget.indent * 16.0),
-          child: Row(
-            children: [
-              buildKey(),
-              Text(
-                '$openingBrace$closingBrace${widget.isLast ? '' : ','}',
-                style: TextStyle(
-                  color: baseColor,
-                  fontFamily: 'monospace',
-                  fontSize: 12,
+        return MouseRegion(
+          onEnter: (_) => setState(() => _isHovering = true),
+          onExit: (_) => setState(() => _isHovering = false),
+          child: Padding(
+            padding: EdgeInsets.only(left: widget.indent * 16.0 + 16.0),
+            child: Row(
+              children: [
+                buildKey(),
+                Text(
+                  '$openingBrace$closingBrace${widget.isLast ? '' : ','}',
+                  style: TextStyle(
+                    color: baseColor,
+                    fontFamily: 'monospace',
+                    fontSize: 12,
+                  ),
                 ),
-              ),
-            ],
+                const Spacer(),
+                if (_isHovering && widget.keyName != null) ...[
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: _copyToClipboard,
+                    child: const Icon(
+                      Icons.copy,
+                      size: 14,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         );
       }
@@ -1141,13 +1157,14 @@ class _JsonNodeViewerState extends State<JsonNodeViewer> {
                     ),
                     if (!_expanded)
                       Text(
-                        ' ... $closingBrace${widget.isLast ? '' : ''}',
+                        ' ... $closingBrace${widget.isLast ? '' : ','}',
                         style: TextStyle(
                           color: Colors.grey,
                           fontFamily: 'monospace',
                           fontSize: 12,
                         ),
                       ),
+                    const Spacer(),
                     if (_isHovering && widget.keyName != null) ...[
                       const SizedBox(width: 8),
                       InkWell(
@@ -1199,23 +1216,29 @@ class _JsonNodeViewerState extends State<JsonNodeViewer> {
           children: [
             buildKey(),
             Expanded(
-              child: _buildValueWidget(
-                widget.data,
-                stringColor,
-                numberColor,
-                boolColor,
-                baseColor,
-              ),
-            ),
-            if (!widget.isLast)
-              Text(
-                ',',
-                style: TextStyle(
-                  color: baseColor,
-                  fontFamily: 'monospace',
-                  fontSize: 12,
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    _buildValueSpan(
+                      widget.data,
+                      stringColor,
+                      numberColor,
+                      boolColor,
+                      baseColor,
+                    ),
+                    if (!widget.isLast)
+                      TextSpan(
+                        text: ',',
+                        style: TextStyle(
+                          color: baseColor,
+                          fontFamily: 'monospace',
+                          fontSize: 12,
+                        ),
+                      ),
+                  ],
                 ),
               ),
+            ),
             if (_isHovering && widget.keyName != null) ...[
               const SizedBox(width: 8),
               InkWell(
@@ -1229,7 +1252,7 @@ class _JsonNodeViewerState extends State<JsonNodeViewer> {
     );
   }
 
-  Widget _buildValueWidget(
+  InlineSpan _buildValueSpan(
     dynamic value,
     Color stringColor,
     Color numberColor,
@@ -1251,8 +1274,8 @@ class _JsonNodeViewerState extends State<JsonNodeViewer> {
       color = Colors.grey;
     }
 
-    return Text(
-      text,
+    return TextSpan(
+      text: text,
       style: TextStyle(color: color, fontFamily: 'monospace', fontSize: 12),
     );
   }
