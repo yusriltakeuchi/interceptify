@@ -68,6 +68,7 @@ class InterceptifyDioInterceptor extends QueuedInterceptor {
         body: options.data,
         timestamp: DateTime.now(),
         paused: shouldPause,
+        clientType: 'dio',
       );
 
       // Post request event to DevTools

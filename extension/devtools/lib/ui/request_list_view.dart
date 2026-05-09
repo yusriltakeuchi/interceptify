@@ -177,8 +177,7 @@ class _RequestListViewState extends State<RequestListView> {
                     final request = _filteredRequests[index];
                     final response = widget.responses[request.id];
                     final error = widget.errors[request.id];
-                    final isSelected =
-                        widget.selectedRequest?.id == request.id;
+                    final isSelected = widget.selectedRequest?.id == request.id;
 
                     return RequestItem(
                       request: request,
@@ -469,8 +468,7 @@ class _RequestListViewState extends State<RequestListView> {
       };
       chips.add(_ActiveChip(
         label: labels[_durationFilter]!,
-        onRemove: () =>
-            setState(() => _durationFilter = _DurationFilter.any),
+        onRemove: () => setState(() => _durationFilter = _DurationFilter.any),
       ));
     }
     if (_failedOnly) {
@@ -656,8 +654,7 @@ class RequestItem extends StatelessWidget {
 
   String _getResponseType(NetworkResponse? response) {
     if (response == null) return '';
-    final contentType =
-        response.headers?.entries
+    final contentType = response.headers?.entries
             .cast<MapEntry<String, dynamic>?>()
             .firstWhere(
               (e) => e!.key.toLowerCase() == 'content-type',
@@ -728,9 +725,8 @@ class RequestItem extends StatelessWidget {
     final responseType = _getResponseType(response);
 
     return Material(
-      color: isSelected
-          ? Colors.blue.withValues(alpha: 0.1)
-          : Colors.transparent,
+      color:
+          isSelected ? Colors.blue.withValues(alpha: 0.1) : Colors.transparent,
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -787,9 +783,10 @@ class RequestItem extends StatelessWidget {
               _buildStatusText(context),
               const SizedBox(width: 6),
               _buildResponseTypeBadge(responseType),
-              if (request.clientType != 'dio') ...[
+              if (request.clientType != null &&
+                  request.clientType!.isNotEmpty) ...[
                 const SizedBox(width: 4),
-                _buildClientBadge(request.clientType),
+                _buildClientBadge(request.clientType!),
               ],
               const Spacer(),
               _buildTimestampAndStatusIcon(context),
@@ -802,6 +799,7 @@ class RequestItem extends StatelessWidget {
 
   Widget _buildClientBadge(String clientType) {
     const colors = {
+      'dio': Colors.blue,
       'http': Colors.teal,
       'graphql': Colors.deepPurple,
     };

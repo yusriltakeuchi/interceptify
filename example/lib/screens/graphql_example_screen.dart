@@ -46,7 +46,7 @@ class _GraphQLExampleScreenState extends State<GraphQLExampleScreen> {
   ''';
 
   static const _queryCountriesByContinent = r'''
-    query GetCountries($code: String!) {
+    query GetCountries($code: ID!) {
       continent(code: $code) {
         name
         countries {
@@ -60,7 +60,7 @@ class _GraphQLExampleScreenState extends State<GraphQLExampleScreen> {
   ''';
 
   static const _queryCountryDetail = r'''
-    query GetCountry($code: String!) {
+    query GetCountry($code: ID!) {
       country(code: $code) {
         name
         native
@@ -103,7 +103,8 @@ class _GraphQLExampleScreenState extends State<GraphQLExampleScreen> {
       if (result.hasException) {
         setState(() {
           _lastError = result.exception.toString();
-          _status = '✗ Error: ${result.exception?.graphqlErrors.firstOrNull?.message ?? result.exception}';
+          _status =
+              '✗ Error: ${result.exception?.graphqlErrors.firstOrNull?.message ?? result.exception}';
         });
       } else {
         setState(() {
@@ -128,10 +129,7 @@ class _GraphQLExampleScreenState extends State<GraphQLExampleScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('GraphQL Example'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('GraphQL Example'), centerTitle: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -155,10 +153,10 @@ class _GraphQLExampleScreenState extends State<GraphQLExampleScreen> {
                 _isLoading
                     ? null
                     : () => _runQuery(
-                          'GetCountries (EU)',
-                          _queryCountriesByContinent,
-                          variables: {'code': 'EU'},
-                        ),
+                        'GetCountries (EU)',
+                        _queryCountriesByContinent,
+                        variables: {'code': 'EU'},
+                      ),
               ),
               _buildButton(
                 'Query: Countries in Asia (AS)',
@@ -167,10 +165,10 @@ class _GraphQLExampleScreenState extends State<GraphQLExampleScreen> {
                 _isLoading
                     ? null
                     : () => _runQuery(
-                          'GetCountries (AS)',
-                          _queryCountriesByContinent,
-                          variables: {'code': 'AS'},
-                        ),
+                        'GetCountries (AS)',
+                        _queryCountriesByContinent,
+                        variables: {'code': 'AS'},
+                      ),
               ),
               _buildButton(
                 'Query: Country Detail (ID)',
@@ -179,10 +177,10 @@ class _GraphQLExampleScreenState extends State<GraphQLExampleScreen> {
                 _isLoading
                     ? null
                     : () => _runQuery(
-                          'GetCountry (ID)',
-                          _queryCountryDetail,
-                          variables: {'code': 'ID'},
-                        ),
+                        'GetCountry (ID)',
+                        _queryCountryDetail,
+                        variables: {'code': 'ID'},
+                      ),
               ),
               _buildButton(
                 'Query: Country Detail (US)',
@@ -191,10 +189,10 @@ class _GraphQLExampleScreenState extends State<GraphQLExampleScreen> {
                 _isLoading
                     ? null
                     : () => _runQuery(
-                          'GetCountry (US)',
-                          _queryCountryDetail,
-                          variables: {'code': 'US'},
-                        ),
+                        'GetCountry (US)',
+                        _queryCountryDetail,
+                        variables: {'code': 'US'},
+                      ),
               ),
             ]),
             const SizedBox(height: 8),
@@ -291,10 +289,9 @@ class _GraphQLExampleScreenState extends State<GraphQLExampleScreen> {
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
         ),
         const SizedBox(height: 8),
-        ...buttons.map((b) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: b,
-            )),
+        ...buttons.map(
+          (b) => Padding(padding: const EdgeInsets.only(bottom: 8), child: b),
+        ),
       ],
     );
   }
@@ -388,7 +385,8 @@ class _GraphQLExampleScreenState extends State<GraphQLExampleScreen> {
   }
 
   String _prettyValue(dynamic v) {
-    if (v is Map) return '{${v.entries.map((e) => '${e.key}: ${e.value}').join(', ')}}';
+    if (v is Map)
+      return '{${v.entries.map((e) => '${e.key}: ${e.value}').join(', ')}}';
     if (v is List) return '[${v.take(5).join(', ')}${v.length > 5 ? '…' : ''}]';
     return v.toString();
   }

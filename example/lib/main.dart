@@ -37,13 +37,7 @@ void main() {
     cache: GraphQLCache(),
   );
 
-  runApp(
-    MyApp(
-      dio: dio,
-      httpClient: httpClient,
-      graphqlClient: graphqlClient,
-    ),
-  );
+  runApp(MyApp(dio: dio, httpClient: httpClient, graphqlClient: graphqlClient));
 }
 
 class MyApp extends StatelessWidget {
@@ -179,8 +173,7 @@ class _ExampleHome extends StatelessWidget {
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) =>
-                      GraphQLExampleScreen(client: graphqlClient),
+                  builder: (_) => GraphQLExampleScreen(client: graphqlClient),
                 ),
               ),
             ),
@@ -248,11 +241,13 @@ class _ExampleCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Text(
-                          title,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -287,10 +282,7 @@ class _ExampleCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(
-                Icons.chevron_right,
-                color: Theme.of(context).disabledColor,
-              ),
+              Icon(Icons.chevron_right, color: Theme.of(context).disabledColor),
             ],
           ),
         ),

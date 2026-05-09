@@ -102,7 +102,9 @@ class Interceptify {
   /// final response = await client.get(Uri.parse('https://api.example.com'));
   /// ```
   static InterceptifyHttpClient httpClient({http.Client? inner}) {
-    if (_devtoolsBridge == null) {
+    if (_devtoolsBridge == null ||
+        _pendingRequestManager == null ||
+        _ruleManager == null) {
       throw StateError(
         'Interceptify not initialized. Call Interceptify.initialize() first.',
       );
@@ -110,6 +112,8 @@ class Interceptify {
     return InterceptifyHttpClient(
       inner: inner ?? http.Client(),
       devtoolsBridge: _devtoolsBridge!,
+      pendingRequestManager: _pendingRequestManager!,
+      ruleManager: _ruleManager!,
     );
   }
 
@@ -126,7 +130,9 @@ class Interceptify {
     required dynamic next,
     String endpoint = 'GraphQL',
   }) {
-    if (_devtoolsBridge == null) {
+    if (_devtoolsBridge == null ||
+        _pendingRequestManager == null ||
+        _ruleManager == null) {
       throw StateError(
         'Interceptify not initialized. Call Interceptify.initialize() first.',
       );
@@ -134,6 +140,8 @@ class Interceptify {
     return InterceptifyGraphQLLink(
       next: next,
       bridge: _devtoolsBridge!,
+      pendingRequestManager: _pendingRequestManager!,
+      ruleManager: _ruleManager!,
       endpoint: endpoint,
     );
   }

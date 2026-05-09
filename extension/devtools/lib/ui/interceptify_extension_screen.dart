@@ -123,86 +123,92 @@ class _InterceptifyExtensionScreenState
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            const Icon(Icons.security, size: 20),
-            const SizedBox(width: 8),
-            const Text(
-              'Interceptify',
-              style: TextStyle(fontWeight: FontWeight.bold),
+    // Subtle semi-transparent gray for all structural borders & dividers.
+    const subtleDivider = Color(0x22888888); // grey ~13% opacity
+
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: subtleDivider),
+      child: Scaffold(
+        appBar: AppBar(
+          title: Row(
+            children: [
+              const Icon(Icons.network_check, size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                'Interceptify',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          elevation: 0,
+          backgroundColor: Theme.of(context).canvasColor,
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1.0),
+            child: Divider(height: 1, color: subtleDivider),
+          ),
+          actions: [
+            _buildActionSwitch(
+              label: _interceptionEnabled ? 'Intercepting' : 'Bypass',
+              value: _interceptionEnabled,
+              activeColor: Colors.green,
+              onChanged: (v) async {
+                if (await _vmServiceClient?.toggleInterception(v) ?? false) {
+                  setState(() {
+                    _interceptionEnabled = v;
+                    if (!v) {
+                      _pauseAllEnabled = false;
+                      _pauseAllResponsesEnabled = false;
+                    }
+                  });
+                }
+              },
             ),
-          ],
-        ),
-        elevation: 0,
-        backgroundColor: Theme.of(context).canvasColor,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1.0),
-          child: Divider(height: 1, color: Theme.of(context).dividerColor),
-        ),
-        actions: [
-          _buildActionSwitch(
-            label: _interceptionEnabled ? 'Intercepting' : 'Bypass',
-            value: _interceptionEnabled,
-            activeColor: Colors.green,
-            onChanged: (v) async {
-              if (await _vmServiceClient?.toggleInterception(v) ?? false) {
-                setState(() {
-                  _interceptionEnabled = v;
-                  if (!v) {
-                    _pauseAllEnabled = false;
-                    _pauseAllResponsesEnabled = false;
+            if (_interceptionEnabled) ...[
+              _buildActionSwitch(
+                label: 'Pause Req',
+                value: _pauseAllEnabled,
+                activeColor: Colors.orange,
+                onChanged: (v) async {
+                  if (await _vmServiceClient?.togglePauseAll(v) ?? false) {
+                    setState(() => _pauseAllEnabled = v);
                   }
-                });
-              }
-            },
-          ),
-          if (_interceptionEnabled) ...[
-            _buildActionSwitch(
-              label: 'Pause Req',
-              value: _pauseAllEnabled,
-              activeColor: Colors.orange,
-              onChanged: (v) async {
-                if (await _vmServiceClient?.togglePauseAll(v) ?? false) {
-                  setState(() => _pauseAllEnabled = v);
-                }
-              },
-            ),
-            _buildActionSwitch(
-              label: 'Pause Res',
-              value: _pauseAllResponsesEnabled,
-              activeColor: Colors.deepOrange,
-              onChanged: (v) async {
-                if (await _vmServiceClient?.togglePauseAllResponses(v) ??
-                    false) {
-                  setState(() => _pauseAllResponsesEnabled = v);
-                }
-              },
+                },
+              ),
+              _buildActionSwitch(
+                label: 'Pause Res',
+                value: _pauseAllResponsesEnabled,
+                activeColor: Colors.deepOrange,
+                onChanged: (v) async {
+                  if (await _vmServiceClient?.togglePauseAllResponses(v) ??
+                      false) {
+                    setState(() => _pauseAllResponsesEnabled = v);
+                  }
+                },
+              ),
+            ],
+            const SizedBox(width: 8),
+          ],
+        ),
+        body: Column(
+          children: [
+            _buildSummaryBar(),
+            Expanded(
+              child: Row(
+                children: [
+                  // Navigation Sidebar
+                  _buildSidebar(),
+                  const VerticalDivider(width: 1, color: Color(0x22888888)),
+                  // Main Content
+                  Expanded(
+                    child: _selectedTab == _ViewTab.requests
+                        ? _buildRequestsView()
+                        : RuleEditorView(vmServiceClient: _vmServiceClient!),
+                  ),
+                ],
+              ),
             ),
           ],
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: Column(
-        children: [
-          _buildSummaryBar(),
-          Expanded(
-            child: Row(
-              children: [
-                // Navigation Sidebar
-                _buildSidebar(),
-                const VerticalDivider(width: 1),
-                // Main Content
-                Expanded(
-                  child: _selectedTab == _ViewTab.requests
-                      ? _buildRequestsView()
-                      : RuleEditorView(vmServiceClient: _vmServiceClient!),
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -246,18 +252,16 @@ class _InterceptifyExtensionScreenState
               Icon(
                 icon,
                 size: 18,
-                color: isSelected
-                    ? Theme.of(context).colorScheme.primary
-                    : null,
+                color:
+                    isSelected ? Theme.of(context).colorScheme.primary : null,
               ),
               const SizedBox(width: 12),
               Text(
                 label,
                 style: TextStyle(
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected
-                      ? Theme.of(context).colorScheme.primary
-                      : null,
+                  color:
+                      isSelected ? Theme.of(context).colorScheme.primary : null,
                 ),
               ),
             ],
@@ -324,7 +328,8 @@ class _InterceptifyExtensionScreenState
           const Spacer(),
 
           // --- Grouping controls ---
-          if (_isGroupingMode && _selectedTab == _ViewTab.requests) ..._buildGroupingControls(),
+          if (_isGroupingMode && _selectedTab == _ViewTab.requests)
+            ..._buildGroupingControls(),
 
           // List / Group toggle
           if (_selectedTab == _ViewTab.requests) ..._buildViewToggle(),
@@ -355,7 +360,8 @@ class _InterceptifyExtensionScreenState
     return [
       const SizedBox(width: 8),
       Tooltip(
-        message: _isGroupingMode ? 'Switch to list view' : 'Switch to grouped view',
+        message:
+            _isGroupingMode ? 'Switch to list view' : 'Switch to grouped view',
         child: InkWell(
           borderRadius: BorderRadius.circular(6),
           onTap: () => setState(() => _isGroupingMode = !_isGroupingMode),
@@ -363,7 +369,10 @@ class _InterceptifyExtensionScreenState
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
               color: _isGroupingMode
-                  ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.12)
+                  ? Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.12)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
@@ -407,7 +416,10 @@ class _InterceptifyExtensionScreenState
         value: _groupingStrategy,
         isDense: true,
         underline: const SizedBox.shrink(),
-        style: const TextStyle(fontSize: 11),
+        style: TextStyle(
+          fontSize: 11,
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
         items: GroupingStrategy.values
             .map(
               (s) => DropdownMenuItem(
@@ -417,7 +429,13 @@ class _InterceptifyExtensionScreenState
                   children: [
                     Icon(s.icon, size: 13),
                     const SizedBox(width: 4),
-                    Text(s.label, style: const TextStyle(fontSize: 11)),
+                    Text(
+                      s.label,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -464,7 +482,7 @@ class _InterceptifyExtensionScreenState
       children: [
         // List / Group
         SizedBox(width: 350, child: listPanel),
-        const VerticalDivider(width: 1),
+        const VerticalDivider(width: 1, color: Color(0x22888888)),
         // Detail
         Expanded(
           child: _selectedRequest == null

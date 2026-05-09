@@ -55,7 +55,10 @@ class _HttpExampleScreenState extends State<HttpExampleScreen> {
         headers: {'Accept': 'application/json'},
       );
       final data = jsonDecode(response.body) as List;
-      _setStatus('✓ GET /posts — ${data.length} posts (${response.statusCode})', result: data);
+      _setStatus(
+        '✓ GET /posts — ${data.length} posts (${response.statusCode})',
+        result: data,
+      );
     });
   }
 
@@ -67,7 +70,10 @@ class _HttpExampleScreenState extends State<HttpExampleScreen> {
         headers: {'Accept': 'application/json'},
       );
       final data = jsonDecode(response.body) as List;
-      _setStatus('✓ GET /users — ${data.length} users (${response.statusCode})', result: data);
+      _setStatus(
+        '✓ GET /users — ${data.length} users (${response.statusCode})',
+        result: data,
+      );
     });
   }
 
@@ -76,7 +82,10 @@ class _HttpExampleScreenState extends State<HttpExampleScreen> {
       final uri = Uri.parse('$_baseUrl/posts/1');
       final response = await widget.httpClient.get(uri);
       final data = jsonDecode(response.body);
-      _setStatus('✓ GET /posts/1 (${response.statusCode}) — "${data['title']}"', result: data);
+      _setStatus(
+        '✓ GET /posts/1 (${response.statusCode}) — "${data['title']}"',
+        result: data,
+      );
     });
   }
 
@@ -93,7 +102,10 @@ class _HttpExampleScreenState extends State<HttpExampleScreen> {
         }),
       );
       final data = jsonDecode(response.body);
-      _setStatus('✓ POST /posts — created id: ${data['id']} (${response.statusCode})', result: data);
+      _setStatus(
+        '✓ POST /posts — created id: ${data['id']} (${response.statusCode})',
+        result: data,
+      );
     });
   }
 
@@ -261,10 +273,9 @@ class _HttpExampleScreenState extends State<HttpExampleScreen> {
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
         ),
         const SizedBox(height: 8),
-        ...buttons.map((b) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: b,
-            )),
+        ...buttons.map(
+          (b) => Padding(padding: const EdgeInsets.only(bottom: 8), child: b),
+        ),
       ],
     );
   }

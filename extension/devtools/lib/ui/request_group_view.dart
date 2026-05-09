@@ -28,7 +28,8 @@ class RequestGrouper {
   ) {
     switch (strategy) {
       case GroupingStrategy.byDomain:
-        return _groupBy(requests, (r) => Uri.tryParse(r.url)?.host ?? 'Unknown');
+        return _groupBy(
+            requests, (r) => Uri.tryParse(r.url)?.host ?? 'Unknown');
       case GroupingStrategy.byPathPrefix:
         return _groupBy(requests, (r) {
           final segments = Uri.tryParse(r.url)?.pathSegments ?? [];
@@ -298,9 +299,10 @@ class _GroupSection extends StatelessWidget {
             Expanded(
               child: Text(
                 groupKey,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
+                  color: color,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),

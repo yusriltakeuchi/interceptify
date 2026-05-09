@@ -73,6 +73,26 @@ class InterceptRule {
     }
   }
 
+  /// Check if a generic HTTP request (without Dio's RequestOptions) matches.
+  /// Used by [InterceptifyHttpClient] and [InterceptifyGraphQLLink].
+  bool matchesHttp(String method, String url) {
+    if (!enabled) return false;
+
+    switch (condition) {
+      case RuleCondition.always:
+        return true;
+      case RuleCondition.urlContains:
+        if (value == null) return false;
+        return url.contains(value!);
+      case RuleCondition.methodEquals:
+        if (value == null) return false;
+        return method.toUpperCase() == value!.toUpperCase();
+      case RuleCondition.graphql:
+        return method.toUpperCase() == 'GRAPHQL' ||
+            method.toUpperCase() == 'POST';
+    }
+  }
+
   /// Convert to JSON for storage/serialization
   Map<String, dynamic> toJson() {
     return {

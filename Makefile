@@ -1,5 +1,5 @@
 build-devtools:
-	cd extension/devtools && flutter build web --pwa-strategy=none --output=build/web
+	cd extension/devtools && flutter build web --output=build/web --wasm
 
 build-devtools-release:
-	cd extension/devtools && flutter build web --pwa-strategy=none --output=build/web --release
+	cd extension/devtools && flutter build web --output=build/web --wasm --release

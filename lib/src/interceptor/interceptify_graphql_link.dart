@@ -5,7 +5,9 @@ import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
 import '../bridge/devtools_bridge.dart';
+import '../manager/pending_request_manager.dart';
 import '../models/intercepted_request.dart';
+import '../rules/rule_manager.dart';
 import '../utils/logging.dart';
 
 /// A GraphQL Link that intercepts all GraphQL operations and posts
@@ -78,13 +80,19 @@ class _GQLRequestInfo {
 class InterceptifyGraphQLLink {
   final dynamic next; // Any Link — kept dynamic to avoid hard dep
   final DevtoolsBridge _bridge;
+  final PendingRequestManager _pendingRequestManager;
+  final RuleManager _ruleManager;
   final String _endpoint;
 
   InterceptifyGraphQLLink({
     required this.next,
     required DevtoolsBridge bridge,
+    required PendingRequestManager pendingRequestManager,
+    required RuleManager ruleManager,
     String endpoint = 'GraphQL',
   }) : _bridge = bridge,
+       _pendingRequestManager = pendingRequestManager,
+       _ruleManager = ruleManager,
        _endpoint = endpoint;
 
   /// Entry-point called by the gql_exec Link chain. Matches `Link.request`.
@@ -98,6 +106,11 @@ class InterceptifyGraphQLLink {
     final startTime = DateTime.now();
 
     final info = _extractInfo(gqlRequest);
+
+    // Check pause rules
+    final shouldPauseRequest = _ruleManager.enabled &&
+        (_ruleManager.pauseAllRequests ||
+            _ruleManager.shouldPauseHttpRequest('GRAPHQL', _endpoint));
 
     final intercepted = InterceptedRequest(
       id: requestId,
@@ -113,6 +126,7 @@ class InterceptifyGraphQLLink {
       },
       timestamp: startTime,
       clientType: 'graphql',
+      paused: shouldPauseRequest,
     );
 
     _bridge.postRequestEvent(intercepted);
@@ -120,46 +134,119 @@ class InterceptifyGraphQLLink {
       'GraphQL ${info.operationType}: ${info.operationName ?? '(anonymous)'} [$requestId]',
     );
 
-    final resultStream = _forwardRequest(gqlRequest, forward);
+    // Pause on request if needed — must convert to async via StreamController
+    if (shouldPauseRequest) {
+      return Stream.fromFuture(_pauseAndForward(
+        intercepted,
+        gqlRequest,
+        forward,
+        requestId,
+        startTime,
+      ));
+    }
 
-    return resultStream.map((result) {
-      final duration = DateTime.now().difference(startTime);
-
-      // Attempt to read statusCode from result if available
-      int? statusCode;
-      dynamic body;
-      try {
-        // graphql_flutter's QueryResult has `.data` and `.exception`
-        final hasException =
-            (result as dynamic).hasException as bool? ?? false;
-        body = hasException
-            ? {'errors': result.exception?.toString()}
-            : result.data;
-        statusCode = hasException ? 200 : 200;
-      } catch (_) {
-        body = result;
-        statusCode = 200;
-      }
-
-      _bridge.postResponseEvent(requestId, statusCode, body, null, duration);
-      InterceptifyLogger.info(
-        'GraphQL response: $requestId - ${duration.inMilliseconds}ms',
-      );
-      return result;
-    }).handleError((e, st) {
-      final duration = DateTime.now().difference(startTime);
-      _bridge.postErrorEvent(requestId, e.toString(), e.runtimeType.toString());
-      InterceptifyLogger.error('GraphQL error: $requestId', e);
-      _bridge.postResponseEvent(requestId, null, null, null, duration);
-      // Re-throw so the caller still gets the error
-      throw e; // ignore: only_throw_errors
-    });
+    return _attachResponseCapture(
+      _forwardRequest(gqlRequest, forward),
+      requestId,
+      startTime,
+      intercepted,
+    );
   }
 
-  Stream<dynamic> _forwardRequest(
+  Future<dynamic> _pauseAndForward(
+    InterceptedRequest intercepted,
     dynamic gqlRequest,
     GraphQLForward? forward,
+    String requestId,
+    DateTime startTime,
+  ) async {
+    try {
+      await _pendingRequestManager.pauseRequest(
+        intercepted,
+        timeout: Duration(seconds: _ruleManager.timeoutSeconds),
+      );
+      _bridge.postRequestEvent(intercepted.copyWith(paused: false));
+    } catch (e) {
+      _bridge.postErrorEvent(requestId, 'Cancelled by DevTools', 'CancelledByUser');
+      throw Exception('GraphQL request cancelled by DevTools');
+    }
+
+    // Return first result from the stream
+    return await _attachResponseCapture(
+      _forwardRequest(gqlRequest, forward),
+      requestId,
+      startTime,
+      intercepted,
+    ).first;
+  }
+
+  Stream<dynamic> _attachResponseCapture(
+    Stream<dynamic> resultStream,
+    String requestId,
+    DateTime startTime,
+    InterceptedRequest intercepted,
   ) {
+    return resultStream
+        .asyncMap((result) async {
+          final duration = DateTime.now().difference(startTime);
+
+          dynamic body;
+          try {
+            final hasException =
+                (result as dynamic).hasException as bool? ?? false;
+            if (hasException) {
+              body = {'errors': result.exception?.toString()};
+            } else {
+              body = result.data; // Already a Map — passes to JSON viewer
+            }
+          } catch (_) {
+            body = result;
+          }
+
+          // Check pause on response
+          final shouldPauseResponse =
+              _ruleManager.enabled && _ruleManager.pauseAllResponses;
+
+          if (shouldPauseResponse) {
+            _bridge.postResponseEvent(requestId, 200, body, null, duration);
+            _bridge.postRequestEvent(intercepted.copyWith(paused: true));
+
+            try {
+              final modifications = await _pendingRequestManager.pauseResponse(
+                requestId,
+                body,
+                null,
+                200,
+                timeout: Duration(seconds: _ruleManager.timeoutSeconds),
+              );
+              if (modifications != null && modifications.containsKey('body')) {
+                body = modifications['body'];
+              }
+            } catch (_) {}
+
+            _bridge.postRequestEvent(intercepted.copyWith(paused: false));
+          }
+
+          _bridge.postResponseEvent(requestId, 200, body, null, duration);
+          InterceptifyLogger.info(
+            'GraphQL response: $requestId - ${duration.inMilliseconds}ms',
+          );
+          return result;
+        })
+        .handleError((e, st) {
+          final duration = DateTime.now().difference(startTime);
+          _bridge.postErrorEvent(
+            requestId,
+            e.toString(),
+            e.runtimeType.toString(),
+          );
+          InterceptifyLogger.error('GraphQL error: $requestId', e);
+          _bridge.postResponseEvent(requestId, null, null, null, duration);
+          throw e; // ignore: only_throw_errors
+        });
+  }
+
+  Stream<dynamic> _forwardRequest(dynamic gqlRequest, GraphQLForward? forward) {
     try {
       // If a forward function is provided (Link chain style)
       if (forward != null) {
@@ -184,8 +271,7 @@ class InterceptifyGraphQLLink {
 
     try {
       operationName = gqlRequest.operation?.operationName as String?;
-      variables =
-          (gqlRequest.variables as Map<String, dynamic>?) ?? const {};
+      variables = (gqlRequest.variables as Map<String, dynamic>?) ?? const {};
     } catch (_) {}
 
     try {

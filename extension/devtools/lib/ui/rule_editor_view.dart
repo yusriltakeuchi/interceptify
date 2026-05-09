@@ -227,8 +227,8 @@ class InterceptionRuleEditorViewState extends State<RuleEditorView> {
                       decoration: InputDecoration(
                         hintText:
                             _selectedCondition == RuleCondition.urlContains
-                            ? 'e.g. /users'
-                            : 'e.g. POST',
+                                ? 'e.g. /users'
+                                : 'e.g. POST',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),

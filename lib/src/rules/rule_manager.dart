@@ -93,6 +93,14 @@ class RuleManager {
     return _rules.any((rule) => rule.matches(requestOptions));
   }
 
+  /// Check if a generic HTTP request (non-Dio) should be paused.
+  /// Used by [InterceptifyHttpClient] and [InterceptifyGraphQLLink].
+  bool shouldPauseHttpRequest(String method, String url) {
+    if (!_enabled) return false;
+    if (_pauseAllRequests) return true;
+    return _rules.any((rule) => rule.matchesHttp(method, url));
+  }
+
   /// Get all matching rules for the given request options
   List<InterceptRule> getMatchingRules(RequestOptions requestOptions) {
     return _rules.where((rule) => rule.matches(requestOptions)).toList();

@@ -88,9 +88,11 @@ class _RequestDetailViewState extends State<RequestDetailView>
   @override
   void didUpdateWidget(RequestDetailView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.request.id != widget.request.id ||
-        (oldWidget.request.paused != widget.request.paused &&
-            widget.request.paused) ||
+    if (oldWidget.request.url != widget.request.url ||
+        oldWidget.request.method != widget.request.method ||
+        oldWidget.request.paused != widget.request.paused ||
+        oldWidget.request.body != widget.request.body ||
+        oldWidget.request.headers != widget.request.headers ||
         oldWidget.response != widget.response) {
       _initializeEditableFields();
       _isEditing = false;
@@ -227,6 +229,87 @@ class _RequestDetailViewState extends State<RequestDetailView>
     return buf.toString();
   }
 
+  /// Three-dot overflow menu shown in the request header when not editing.
+  Widget _buildActionsMenu() {
+    final canRetry = widget.response != null || widget.error != null;
+
+    return PopupMenuButton<_HeaderAction>(
+      icon: const Icon(Icons.more_vert, size: 20),
+      tooltip: 'More actions',
+      onSelected: (action) async {
+        switch (action) {
+          case _HeaderAction.copyUrl:
+            await Clipboard.setData(
+              ClipboardData(text: widget.request.url),
+            );
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('URL copied to clipboard'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            }
+          case _HeaderAction.copyCurl:
+            final curl = _buildCurlCommand();
+            await Clipboard.setData(ClipboardData(text: curl));
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('cURL command copied to clipboard'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            }
+          case _HeaderAction.retry:
+            await _retryRequest();
+        }
+      },
+      itemBuilder: (context) => [
+        const PopupMenuItem(
+          value: _HeaderAction.copyUrl,
+          child: Row(
+            children: [
+              Icon(Icons.link, size: 18),
+              SizedBox(width: 12),
+              Text('Copy URL'),
+            ],
+          ),
+        ),
+        const PopupMenuItem(
+          value: _HeaderAction.copyCurl,
+          child: Row(
+            children: [
+              Icon(Icons.terminal, size: 18),
+              SizedBox(width: 12),
+              Text('Copy as cURL'),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: _HeaderAction.retry,
+          enabled: canRetry,
+          child: Row(
+            children: [
+              Icon(
+                Icons.refresh,
+                size: 18,
+                color: canRetry ? null : Theme.of(context).disabledColor,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Retry Request',
+                style: TextStyle(
+                  color: canRetry ? null : Theme.of(context).disabledColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -290,30 +373,7 @@ class _RequestDetailViewState extends State<RequestDetailView>
                         overflow: TextOverflow.ellipsis,
                       ),
               ),
-              if (!_isEditing)
-                IconButton(
-                  icon: const Icon(Icons.terminal, size: 18),
-                  tooltip: 'Copy as cURL',
-                  onPressed: () async {
-                    final curl = _buildCurlCommand();
-                    await Clipboard.setData(ClipboardData(text: curl));
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('cURL copied to clipboard'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  },
-                ),
-              if (!_isEditing &&
-                  (widget.response != null || widget.error != null))
-                IconButton(
-                  icon: const Icon(Icons.refresh, size: 20),
-                  tooltip: 'Retry Request',
-                  onPressed: _retryRequest,
-                ),
+              if (!_isEditing) _buildActionsMenu(),
             ],
           ),
           const SizedBox(height: 8),
@@ -530,9 +590,8 @@ class _RequestDetailViewState extends State<RequestDetailView>
         _buildSectionTitle('RESPONSE BODY'),
         const SizedBox(height: 8),
         _buildRichJsonEditor(
-          data: _isEditingResponse
-              ? _editedResponseBody
-              : widget.response!.body,
+          data:
+              _isEditingResponse ? _editedResponseBody : widget.response!.body,
           controller: _responseBodyController,
           isEditing: _isEditingResponse,
           onChanged: (v) => _editedResponseBody = v,
@@ -560,9 +619,8 @@ class _RequestDetailViewState extends State<RequestDetailView>
   }
 
   Widget _buildStatusCodeBadge(int statusCode) {
-    Color color = (statusCode >= 200 && statusCode < 300)
-        ? Colors.green
-        : Colors.red;
+    Color color =
+        (statusCode >= 200 && statusCode < 300) ? Colors.green : Colors.red;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -739,6 +797,20 @@ class _RequestDetailViewState extends State<RequestDetailView>
       );
     }
 
+    // If the body arrived as a raw JSON string (from package:http or GraphQL),
+    // parse it into a Map/List so JsonColorViewer can render the interactive tree.
+    dynamic viewerData = data;
+    if (data is String) {
+      final trimmed = data.trimLeft();
+      if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+        try {
+          viewerData = jsonDecode(data);
+        } catch (_) {
+          // Not valid JSON — fall through and display as plain string
+        }
+      }
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -754,11 +826,12 @@ class _RequestDetailViewState extends State<RequestDetailView>
               color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
             ),
           ),
-          child: JsonColorViewer(data: data),
+          child: JsonColorViewer(data: viewerData),
         ),
       ],
     );
   }
+
 
   Widget _buildUniversalActionFooter() {
     if (!widget.request.paused && !_isEditing && !_isEditingResponse) {
@@ -766,8 +839,7 @@ class _RequestDetailViewState extends State<RequestDetailView>
     }
 
     // Check if we are in a state that requires response actions
-    bool showResponseActions =
-        widget.response != null &&
+    bool showResponseActions = widget.response != null &&
         (widget.request.paused || _isEditingResponse);
     // Check if we are in a state that requires request actions (request is paused)
     bool showRequestActions =
@@ -803,6 +875,10 @@ class _RequestDetailViewState extends State<RequestDetailView>
               TextButton(
                 onPressed: () {
                   _initializeEditableFields();
+                  // Move cursor to the END so the path is visible immediately
+                  _urlController.selection = TextSelection.fromPosition(
+                    TextPosition(offset: _urlController.text.length),
+                  );
                   setState(() => _isEditing = true);
                 },
                 child: const Text('Edit Request'),
@@ -1012,9 +1088,8 @@ class _JsonNodeViewerState extends State<JsonNodeViewer> {
 
     if (widget.data is Map || widget.data is List) {
       final isMap = widget.data is Map;
-      final children = isMap
-          ? (widget.data as Map).entries.toList()
-          : (widget.data as List);
+      final children =
+          isMap ? (widget.data as Map).entries.toList() : (widget.data as List);
       final openingBrace = isMap ? '{' : '[';
       final closingBrace = isMap ? '}' : ']';
 
@@ -1066,7 +1141,7 @@ class _JsonNodeViewerState extends State<JsonNodeViewer> {
                     ),
                     if (!_expanded)
                       Text(
-                        ' ... $closingBrace${widget.isLast ? '' : ','}',
+                        ' ... $closingBrace${widget.isLast ? '' : ''}',
                         style: TextStyle(
                           color: Colors.grey,
                           fontFamily: 'monospace',
@@ -1182,3 +1257,6 @@ class _JsonNodeViewerState extends State<JsonNodeViewer> {
     );
   }
 }
+
+/// Actions available from the three-dot menu in the request detail header.
+enum _HeaderAction { copyUrl, copyCurl, retry }
