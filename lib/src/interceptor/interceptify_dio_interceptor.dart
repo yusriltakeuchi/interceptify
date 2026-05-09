@@ -36,6 +36,20 @@ class InterceptifyDioInterceptor extends QueuedInterceptor {
     }
 
     try {
+      // Normalize request options to prevent query parameter duplication
+      // by moving any query string from the path into the queryParameters map.
+      if (options.path.contains('?')) {
+        try {
+          final uri = Uri.parse(options.path);
+          if (uri.hasQuery) {
+            options.path = uri.toString().split('?').first;
+            options.queryParameters.addAll(uri.queryParameters);
+          }
+        } catch (_) {
+          // Ignore parsing errors for non-standard paths
+        }
+      }
+
       // Generate unique ID for this request
       const uuid = Uuid();
       final requestId = uuid.v4();
@@ -62,10 +76,10 @@ class InterceptifyDioInterceptor extends QueuedInterceptor {
       final interceptedRequest = InterceptedRequest(
         id: requestId,
         method: options.method,
-        url: options.uri.toString(),
+        url: options.uri.toString().split('?').first,
         headers: headers,
-        queryParameters: Map<String, dynamic>.from(options.queryParameters),
-        body: options.data,
+        queryParameters: Map<String, dynamic>.from(options.uri.queryParameters),
+        body: _serializeBody(options.data),
         timestamp: DateTime.now(),
         paused: shouldPause,
         clientType: 'dio',
@@ -95,12 +109,12 @@ class InterceptifyDioInterceptor extends QueuedInterceptor {
             // Post UPDATED request event to DevTools so UI reflects changes
             final updatedRequest = interceptedRequest.copyWith(
               method: options.method,
-              url: options.uri.toString(),
+              url: options.uri.toString().split('?').first,
               headers: Map<String, dynamic>.from(options.headers),
               queryParameters: Map<String, dynamic>.from(
-                options.queryParameters,
+                options.uri.queryParameters,
               ),
-              body: options.data,
+              body: _serializeBody(options.data),
               paused: false, // Mark as no longer paused
             );
             _devtoolsBridge.postRequestEvent(updatedRequest);
@@ -155,7 +169,7 @@ class InterceptifyDioInterceptor extends QueuedInterceptor {
         _devtoolsBridge.postResponseEvent(
           requestId,
           response.statusCode,
-          response.data,
+          _serializeBody(response.data),
           response.headers.map.map(
             (key, value) =>
                 MapEntry(key, value.isNotEmpty ? value.first : null),
@@ -179,14 +193,14 @@ class InterceptifyDioInterceptor extends QueuedInterceptor {
               InterceptedRequest(
                 id: requestId,
                 method: response.requestOptions.method,
-                url: response.requestOptions.uri.toString(),
+                url: response.requestOptions.uri.toString().split('?').first,
                 headers: Map<String, dynamic>.from(
                   response.requestOptions.headers,
                 ),
                 queryParameters: Map<String, dynamic>.from(
-                  response.requestOptions.queryParameters,
+                  response.requestOptions.uri.queryParameters,
                 ),
-                body: response.requestOptions.data,
+                body: _serializeBody(response.requestOptions.data),
                 timestamp: startTime,
                 paused: true,
               ),
@@ -196,7 +210,7 @@ class InterceptifyDioInterceptor extends QueuedInterceptor {
             _devtoolsBridge.postResponseEvent(
               requestId,
               response.statusCode,
-              response.data,
+              _serializeBody(response.data),
               response.headers.map.map(
                 (key, value) =>
                     MapEntry(key, value.isNotEmpty ? value.first : null),
@@ -239,7 +253,7 @@ class InterceptifyDioInterceptor extends QueuedInterceptor {
             _devtoolsBridge.postResponseEvent(
               requestId,
               response.statusCode,
-              response.data,
+              _serializeBody(response.data),
               response.headers.map.map(
                 (key, value) =>
                     MapEntry(key, value.isNotEmpty ? value.first : null),
@@ -252,14 +266,14 @@ class InterceptifyDioInterceptor extends QueuedInterceptor {
               InterceptedRequest(
                 id: requestId,
                 method: response.requestOptions.method,
-                url: response.requestOptions.uri.toString(),
+                url: response.requestOptions.uri.toString().split('?').first,
                 headers: Map<String, dynamic>.from(
                   response.requestOptions.headers,
                 ),
                 queryParameters: Map<String, dynamic>.from(
-                  response.requestOptions.queryParameters,
+                  response.requestOptions.uri.queryParameters,
                 ),
-                body: response.requestOptions.data,
+                body: _serializeBody(response.requestOptions.data),
                 timestamp: startTime,
                 paused: false,
               ),
@@ -308,5 +322,27 @@ class InterceptifyDioInterceptor extends QueuedInterceptor {
     }
 
     return handler.next(err);
+  }
+
+  /// Helper method to serialize complex body types, especially Dio's FormData
+  dynamic _serializeBody(dynamic body) {
+    if (body == null) return null;
+
+    if (body is FormData) {
+      final Map<String, dynamic> formDataMap = {};
+      for (final field in body.fields) {
+        formDataMap[field.key] = field.value;
+      }
+      for (final file in body.files) {
+        formDataMap[file.key] =
+            '[File: ${file.value.filename}, size: ${file.value.length} bytes]';
+      }
+      return {
+        '__interceptify_type__': 'FormData',
+        'data': formDataMap,
+      };
+    }
+
+    return body;
   }
 }

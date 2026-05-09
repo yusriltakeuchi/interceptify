@@ -84,9 +84,9 @@ class InterceptifyHttpClient extends http.BaseClient {
     final interceptedRequest = InterceptedRequest(
       id: requestId,
       method: request.method,
-      url: request.url.toString(),
+      url: request.url.toString().split('?').first,
       headers: Map<String, dynamic>.from(request.headers),
-      queryParameters: _parseQueryParams(request.url),
+      queryParameters: Map<String, dynamic>.from(request.url.queryParameters),
       body: requestBody,
       timestamp: startTime,
       clientType: 'http',
@@ -128,10 +128,11 @@ class InterceptifyHttpClient extends http.BaseClient {
             } catch (_) {}
 
             currentRequest = currentRequest.copyWith(
-              url: modReq.url.toString(),
+              url: modReq.url.toString().split('?').first,
               method: modReq.method,
               headers: Map<String, dynamic>.from(modReq.headers),
-              queryParameters: _parseQueryParams(modReq.url),
+              queryParameters:
+                  Map<String, dynamic>.from(modReq.url.queryParameters),
               body: modBody,
               paused: false,
             );
@@ -257,11 +258,6 @@ class InterceptifyHttpClient extends http.BaseClient {
     }
   }
 
-  /// Parse query parameters from a Uri into a flat string map.
-  Map<String, dynamic> _parseQueryParams(Uri uri) {
-    return Map<String, dynamic>.from(uri.queryParameters);
-  }
-
   /// Decode response bytes as UTF-8, then attempt JSON parse.
   /// Returns a Map/List if JSON, otherwise a String.
   dynamic _parseResponseBody(List<int> bytes) {
@@ -309,16 +305,15 @@ class InterceptifyHttpClient extends http.BaseClient {
     }
 
     // --- Query parameters (merge/override) ---
+    // The table modifications take precedence over the URL string's query
     final modParams = (modifications['queryParameters'] as Map?)?.map(
           (k, v) => MapEntry(k.toString(), v.toString()),
         ) ??
         <String, String>{};
 
-    if (modParams.isNotEmpty) {
-      final merged = Map<String, String>.from(uri.queryParameters)
-        ..addAll(modParams);
-      uri = uri.replace(queryParameters: merged);
-    }
+    final merged = Map<String, String>.from(uri.queryParameters)
+      ..addAll(modParams);
+    uri = uri.replace(queryParameters: merged);
 
     // --- Method ---
     final method =

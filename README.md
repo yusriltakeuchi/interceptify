@@ -7,13 +7,21 @@
   <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License" />
 </p>
 
-**Interceptify** is a Flutter DevTools extension that gives you full visibility and control over your app's network layer — intercept, inspect, filter, modify, and group HTTP traffic in real-time, right inside your IDE.
+**Interceptify** is a Flutter DevTools extension that gives you full visibility and control over your app's network layer. You can intercept, inspect, filter, modify, and group HTTP traffic in real-time, right inside your DevTools.
 
 <p align="center">
   <img src="screenshots/Interceptify_Screenshot.png" alt="Interceptify Screenshot" width="800" />
 </p>
 
-It supports **Dio** and **`package:http`** out of the box.
+### Supported HTTP Clients
+
+| Package | Status | Notes |
+|---------|--------|-------|
+| **`dio`** | ✅ Supported | Full support including `FormData` |
+| **`http`** | ✅ Supported | via `InterceptifyHttpClient` wrapper |
+| **`graphql_flutter`** | ❌ Planned | Coming soon |
+| **`chopper`** | ❌ Planned | Coming soon |
+| **`grpc`** | ❌ Planned | Coming soon |
 
 > **Safe by design.** Interceptify is completely inactive in release builds (`kDebugMode` guard). No performance overhead, no data leaks in production.
 
@@ -60,8 +68,8 @@ Add `interceptify` to your `pubspec.yaml`, along with the HTTP client(s) you use
 dependencies:
   interceptify: ^0.0.1
 
-  dio: ^5.4.0              # if you use Dio
-  http: ^1.2.0             # if you use package:http
+  dio: ^5.9.2              # if you use Dio
+  http: ^1.6.0             # if you use package:http
 ```
 
 Then run:
@@ -194,7 +202,7 @@ Each group header shows a **request count badge** and a red **error count badge*
 
 This is where Interceptify becomes a real debugging superpower.
 
-1. **Create a rule** in the **Rules** tab (or enable *Pause All Requests* in the toolbar).
+1. **Create a rule** in the **Rules** tab (or enable *Pause All Requests* in the toolbar) (Optional).
 2. When a matching request is made, it appears in the list as **PENDING** with an orange indicator.
 3. **Select the request** to open the detail view.
 4. Edit any field — headers, query parameters, request body, or response body.

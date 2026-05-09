@@ -344,7 +344,7 @@ class _InterceptifyExtensionScreenState
                 _selectedRequest = null;
               });
             },
-            icon: const Icon(Icons.delete_outline, size: 14),
+            icon: const Icon(Icons.delete_sweep, size: 14),
             label: const Text('Clear all', style: TextStyle(fontSize: 11)),
             style: TextButton.styleFrom(
               padding: EdgeInsets.zero,

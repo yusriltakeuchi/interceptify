@@ -363,14 +363,16 @@ class _RequestDetailViewState extends State<RequestDetailView>
                         ),
                         style: const TextStyle(fontSize: 14),
                       )
-                    : Text(
-                        widget.request.url,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                    : SelectionArea(
+                        child: Text(
+                          Uri.decodeFull(widget.request.url),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
               ),
               if (!_isEditing) _buildActionsMenu(),
@@ -385,11 +387,17 @@ class _RequestDetailViewState extends State<RequestDetailView>
                 color: Theme.of(context).disabledColor,
               ),
               const SizedBox(width: 4),
-              Text(
-                widget.request.timestamp.toLocal().toString().split('.').first,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).disabledColor,
+              SelectionArea(
+                child: Text(
+                  widget.request.timestamp
+                      .toLocal()
+                      .toString()
+                      .split('.')
+                      .first,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).disabledColor,
+                  ),
                 ),
               ),
               const Spacer(),
@@ -652,25 +660,27 @@ class _RequestDetailViewState extends State<RequestDetailView>
 
     bool editing = _isEditing && !readOnly;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ...data.entries.map(
-          (e) => _buildEditorRow(
-            e.key,
-            e.value,
-            controllers[e.key],
-            onEdit,
-            editing,
+    return SelectionArea(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ...data.entries.map(
+            (e) => _buildEditorRow(
+              e.key,
+              e.value,
+              controllers[e.key],
+              onEdit,
+              editing,
+            ),
           ),
-        ),
-        if (editing)
-          TextButton.icon(
-            onPressed: onAdd,
-            icon: const Icon(Icons.add, size: 14),
-            label: const Text('Add Entry', style: TextStyle(fontSize: 11)),
-          ),
-      ],
+          if (editing)
+            TextButton.icon(
+              onPressed: onAdd,
+              icon: const Icon(Icons.add, size: 14),
+              label: const Text('Add Entry', style: TextStyle(fontSize: 11)),
+            ),
+        ],
+      ),
     );
   }
 
@@ -1027,9 +1037,42 @@ class JsonColorViewer extends StatelessWidget {
       return const Text('null', style: TextStyle(color: Colors.grey));
     }
 
+    dynamic viewerData = data;
+    bool isFormData = false;
+
+    if (data is Map && data['__interceptify_type__'] == 'FormData') {
+      viewerData = data['data'];
+      isFormData = true;
+    }
+
     return Stack(
       children: [
-        SelectionArea(child: JsonNodeViewer(data: data)),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (isFormData) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                ),
+                child: const Text(
+                  'MULTIPART FORM DATA',
+                  style: TextStyle(
+                    color: Colors.blue,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+            SelectionArea(child: JsonNodeViewer(data: viewerData)),
+          ],
+        ),
         Positioned(
           top: 0,
           right: 0,
@@ -1040,20 +1083,21 @@ class JsonColorViewer extends StatelessWidget {
             constraints: const BoxConstraints(),
             onPressed: () async {
               String textToCopy;
-              if (data is String) {
-                textToCopy = data;
+              if (viewerData is String) {
+                textToCopy = viewerData;
               } else {
                 try {
-                  textToCopy = const JsonEncoder.withIndent('  ').convert(data);
+                  textToCopy =
+                      const JsonEncoder.withIndent('  ').convert(viewerData);
                 } catch (_) {
-                  textToCopy = data.toString();
+                  textToCopy = viewerData.toString();
                 }
               }
               await Clipboard.setData(ClipboardData(text: textToCopy));
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('JSON copied to clipboard'),
+                    content: Text('Copied to clipboard'),
                     duration: Duration(seconds: 1),
                   ),
                 );

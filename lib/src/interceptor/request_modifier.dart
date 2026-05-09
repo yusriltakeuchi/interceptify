@@ -34,12 +34,15 @@ class RequestModifier {
   /// {
   ///   'headers': {'Header-Name': 'value', ...},
   ///   'body': {...},
-  ///   'queryParameters': {'param': 'value', ...}
+  ///   'queryParameters': {'param': 'value', ...},
+  ///   'url': '...',
+  ///   'method': '...'
   /// }
   static void applyAllModifications(
     RequestOptions options,
     Map<String, dynamic> modifications,
   ) {
+    // 1. Headers
     if (modifications.containsKey('headers')) {
       final headers = modifications['headers'];
       if (headers is Map<String, dynamic>) {
@@ -47,25 +50,44 @@ class RequestModifier {
       }
     }
 
+    // 2. Body
     if (modifications.containsKey('body')) {
       final body = modifications['body'];
       applyBodyModification(options, body);
     }
 
-    if (modifications.containsKey('queryParameters')) {
-      final queryParams = modifications['queryParameters'];
-      if (queryParams is Map<String, dynamic>) {
-        applyQueryParamModifications(options, queryParams);
+    // 3. URL & Query Parameters
+    // We handle these together to prevent duplication if params are in both
+    String? modifiedUrl = modifications['url'] as String?;
+    Map<String, dynamic>? modifiedQueryParams =
+        modifications['queryParameters'] as Map<String, dynamic>?;
+
+    if (modifiedUrl != null && modifiedUrl.isNotEmpty) {
+      try {
+        final uri = Uri.parse(modifiedUrl);
+        if (uri.hasQuery) {
+          // If the URL string has query parameters, move them to the map
+          // and keep only the base URL in options.path
+          options.path = uri.replace(query: null).toString();
+
+          // Merge: queryParameters from the table take precedence over the URL string
+          final urlParams = uri.queryParameters;
+          modifiedQueryParams = {...urlParams, ...?modifiedQueryParams};
+        } else {
+          options.path = modifiedUrl;
+        }
+      } catch (_) {
+        // If URL is invalid, fall back to setting it directly
+        options.path = modifiedUrl;
       }
     }
 
-    if (modifications.containsKey('url')) {
-      final url = modifications['url'];
-      if (url is String && url.isNotEmpty) {
-        options.path = url;
-      }
+    if (modifiedQueryParams != null) {
+      // Use replace instead of addAll to avoid duplication with original options.queryParameters
+      replaceQueryParameters(options, modifiedQueryParams);
     }
 
+    // 4. Method
     if (modifications.containsKey('method')) {
       final method = modifications['method'];
       if (method is String && method.isNotEmpty) {

@@ -24,6 +24,21 @@ class InterceptionRuleEditorViewState extends State<RuleEditorView> {
   void initState() {
     super.initState();
     _fetchTimeout();
+    _fetchRules();
+  }
+
+  Future<void> _fetchRules() async {
+    setState(() => _isLoading = true);
+    final rulesJson = await widget.vmServiceClient.getRules();
+    if (mounted) {
+      setState(() {
+        _rules.clear();
+        for (final json in rulesJson) {
+          _rules.add(InterceptionRule.fromJson(json));
+        }
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _fetchTimeout() async {

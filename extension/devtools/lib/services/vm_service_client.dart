@@ -114,6 +114,26 @@ class InterceptifyVMServiceClient {
     }
   }
 
+  /// Get all rules
+  Future<List<Map<String, dynamic>>> getRules() async {
+    try {
+      final response = await serviceManager.callServiceExtensionOnMainIsolate(
+        InterceptifyConstants.getRulesExtension,
+      );
+
+      final result = response.json?['result'] as List?;
+      if (result != null) {
+        return List<Map<String, dynamic>>.from(
+          result.cast<Map<String, dynamic>>(),
+        );
+      }
+      return [];
+    } catch (e) {
+      debugPrint('Error getting rules: $e');
+      return [];
+    }
+  }
+
   /// Toggle interception globally
   Future<bool> toggleInterception(bool enabled) async {
     try {

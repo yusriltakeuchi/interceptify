@@ -37,6 +37,7 @@ class DevtoolsBridge {
     _registerAddRule();
     _registerRemoveRule();
     _registerClearRules();
+    _registerGetRules();
     _registerToggleInterception();
     _registerGetInterceptionStatus();
     _registerTogglePauseAll();
@@ -245,23 +246,42 @@ class DevtoolsBridge {
 
   /// Register the clearRules extension
   void _registerClearRules() {
-    developer.registerExtension(InterceptifyConstants.clearRulesExtension, (
-      String method,
-      Map<String, String> params,
-    ) async {
-      try {
-        _ruleManager.clearRules();
+    developer.registerExtension(
+      InterceptifyConstants.clearRulesExtension,
+      (String method, Map<String, String> params) async {
+        try {
+          _ruleManager.clearRules();
+          return developer.ServiceExtensionResponse.result(
+            jsonEncode({'success': true}),
+          );
+        } catch (e) {
+          InterceptifyLogger.error('Error in clearRules', e);
+          return developer.ServiceExtensionResponse.result(
+            jsonEncode({'error': e.toString(), 'success': false}),
+          );
+        }
+      },
+    );
+  }
 
-        return developer.ServiceExtensionResponse.result(
-          jsonEncode({'success': true, 'message': 'All rules cleared'}),
-        );
-      } catch (e) {
-        InterceptifyLogger.error('Error in clearRules', e);
-        return developer.ServiceExtensionResponse.result(
-          jsonEncode({'error': e.toString(), 'success': false}),
-        );
-      }
-    });
+  /// Register the getRules extension
+  void _registerGetRules() {
+    developer.registerExtension(
+      InterceptifyConstants.getRulesExtension,
+      (String method, Map<String, String> params) async {
+        try {
+          final data = _ruleManager.toJson();
+          return developer.ServiceExtensionResponse.result(
+            jsonEncode({'result': data, 'success': true}),
+          );
+        } catch (e) {
+          InterceptifyLogger.error('Error in getRules', e);
+          return developer.ServiceExtensionResponse.result(
+            jsonEncode({'error': e.toString(), 'success': false}),
+          );
+        }
+      },
+    );
   }
 
   /// Post a request event to DevTools
@@ -341,6 +361,23 @@ class DevtoolsBridge {
     if (body is bool) return body;
     if (body is Map) return body;
     if (body is List) return body;
+
+    // Handle Dio's FormData if it hasn't been serialized yet
+    if (body is FormData) {
+      final Map<String, dynamic> formDataMap = {};
+      for (final field in body.fields) {
+        formDataMap[field.key] = field.value;
+      }
+      for (final file in body.files) {
+        formDataMap[file.key] =
+            '[File: ${file.value.filename}, size: ${file.value.length} bytes]';
+      }
+      return {
+        '__interceptify_type__': 'FormData',
+        'data': formDataMap,
+      };
+    }
+
     // For other types, convert to string representation
     return body.toString();
   }

@@ -25,6 +25,9 @@ class InterceptifyConstants {
   /// Extension for clearing all rules
   static const String clearRulesExtension = 'ext.interceptify.clearRules';
 
+  /// Extension for getting all rules
+  static const String getRulesExtension = 'ext.interceptify.getRules';
+
   /// Event kind for request events
   static const String requestEventKind = 'ext.interceptify.requestEvent';
 

@@ -642,7 +642,8 @@ class RequestItem extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
 
-  const RequestItem({super.key, 
+  const RequestItem({
+    super.key,
     required this.request,
     this.response,
     this.error,
@@ -768,7 +769,7 @@ class RequestItem extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            request.url,
+            Uri.decodeFull(request.url),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontSize: 12),

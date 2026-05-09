@@ -41,6 +41,18 @@ class InterceptionRule {
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
+  factory InterceptionRule.fromJson(Map<String, dynamic> json) {
+    return InterceptionRule(
+      id: json['id'] as String,
+      condition: json['condition'] as String? ?? 'always',
+      value: json['value'] as String?,
+      enabled: json['enabled'] as bool? ?? true,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
+          : null,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
