@@ -6,6 +6,7 @@ import '../services/vm_service_client.dart';
 import '../models/network_models.dart';
 import 'request_detail_view.dart';
 import 'request_list_view.dart';
+import 'request_group_view.dart';
 import 'rule_editor_view.dart';
 
 enum _ViewTab { requests, rules }
@@ -35,6 +36,10 @@ class _InterceptifyExtensionScreenState
 
   _ViewTab _selectedTab = _ViewTab.requests;
   bool _isInitialized = false;
+
+  // --- Smart Grouping ---
+  bool _isGroupingMode = false;
+  GroupingStrategy _groupingStrategy = GroupingStrategy.byDomain;
 
   @override
   void initState() {
@@ -317,6 +322,14 @@ class _InterceptifyExtensionScreenState
             color: _errors.isNotEmpty ? Colors.red : null,
           ),
           const Spacer(),
+
+          // --- Grouping controls ---
+          if (_isGroupingMode && _selectedTab == _ViewTab.requests) ..._buildGroupingControls(),
+
+          // List / Group toggle
+          if (_selectedTab == _ViewTab.requests) ..._buildViewToggle(),
+
+          const SizedBox(width: 8),
           TextButton.icon(
             onPressed: () {
               setState(() {
@@ -338,6 +351,85 @@ class _InterceptifyExtensionScreenState
     );
   }
 
+  List<Widget> _buildViewToggle() {
+    return [
+      const SizedBox(width: 8),
+      Tooltip(
+        message: _isGroupingMode ? 'Switch to list view' : 'Switch to grouped view',
+        child: InkWell(
+          borderRadius: BorderRadius.circular(6),
+          onTap: () => setState(() => _isGroupingMode = !_isGroupingMode),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: _isGroupingMode
+                  ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.12)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: _isGroupingMode
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).dividerColor,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _isGroupingMode ? Icons.folder_open : Icons.list,
+                  size: 13,
+                  color: _isGroupingMode
+                      ? Theme.of(context).colorScheme.primary
+                      : null,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  _isGroupingMode ? 'Grouped' : 'List',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: _isGroupingMode
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ];
+  }
+
+  List<Widget> _buildGroupingControls() {
+    return [
+      const SizedBox(width: 8),
+      DropdownButton<GroupingStrategy>(
+        value: _groupingStrategy,
+        isDense: true,
+        underline: const SizedBox.shrink(),
+        style: const TextStyle(fontSize: 11),
+        items: GroupingStrategy.values
+            .map(
+              (s) => DropdownMenuItem(
+                value: s,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(s.icon, size: 13),
+                    const SizedBox(width: 4),
+                    Text(s.label, style: const TextStyle(fontSize: 11)),
+                  ],
+                ),
+              ),
+            )
+            .toList(),
+        onChanged: (v) {
+          if (v != null) setState(() => _groupingStrategy = v);
+        },
+      ),
+    ];
+  }
+
   Widget _buildSummaryItem(IconData icon, String text, {Color? color}) {
     return Row(
       children: [
@@ -349,20 +441,29 @@ class _InterceptifyExtensionScreenState
   }
 
   Widget _buildRequestsView() {
-    return Row(
-      children: [
-        // List
-        SizedBox(
-          width: 350,
-          child: RequestListView(
+    final listPanel = _isGroupingMode
+        ? RequestGroupView(
             requests: _requests,
             responses: _responses,
             errors: _errors,
             selectedRequest: _selectedRequest,
             onRequestSelected: (request) =>
                 setState(() => _selectedRequest = request),
-          ),
-        ),
+            strategy: _groupingStrategy,
+          )
+        : RequestListView(
+            requests: _requests,
+            responses: _responses,
+            errors: _errors,
+            selectedRequest: _selectedRequest,
+            onRequestSelected: (request) =>
+                setState(() => _selectedRequest = request),
+          );
+
+    return Row(
+      children: [
+        // List / Group
+        SizedBox(width: 350, child: listPanel),
         const VerticalDivider(width: 1),
         // Detail
         Expanded(

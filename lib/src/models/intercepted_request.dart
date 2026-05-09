@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 
-/// Represents an HTTP request that has been intercepted by the Dio interceptor.
+/// Represents an HTTP request that has been intercepted.
+/// Supports multiple HTTP clients: Dio, dart:http, GraphQL.
 class InterceptedRequest {
   final String id;
   final String method;
@@ -11,6 +12,10 @@ class InterceptedRequest {
   final DateTime timestamp;
   final bool paused;
 
+  /// Identifies which HTTP client made this request.
+  /// Values: 'dio' | 'http' | 'graphql'
+  final String clientType;
+
   InterceptedRequest({
     required this.id,
     required this.method,
@@ -20,6 +25,7 @@ class InterceptedRequest {
     this.body,
     required this.timestamp,
     this.paused = false,
+    this.clientType = 'dio',
   });
 
   /// Convert to JSON for serialization to DevTools
@@ -33,6 +39,7 @@ class InterceptedRequest {
       'body': _serializeBody(body),
       'timestamp': timestamp.toIso8601String(),
       'paused': paused,
+      'clientType': clientType,
     };
   }
 
@@ -47,6 +54,7 @@ class InterceptedRequest {
       body: json['body'],
       timestamp: DateTime.parse(json['timestamp'] as String),
       paused: json['paused'] as bool? ?? false,
+      clientType: json['clientType'] as String? ?? 'dio',
     );
   }
 
@@ -60,6 +68,7 @@ class InterceptedRequest {
     dynamic body,
     DateTime? timestamp,
     bool? paused,
+    String? clientType,
   }) {
     return InterceptedRequest(
       id: id ?? this.id,
@@ -70,6 +79,7 @@ class InterceptedRequest {
       body: body ?? this.body,
       timestamp: timestamp ?? this.timestamp,
       paused: paused ?? this.paused,
+      clientType: clientType ?? this.clientType,
     );
   }
 
@@ -93,7 +103,8 @@ class InterceptedRequest {
           ) &&
           body == other.body &&
           timestamp == other.timestamp &&
-          paused == other.paused;
+          paused == other.paused &&
+          clientType == other.clientType;
 
   @override
   int get hashCode =>
@@ -104,7 +115,8 @@ class InterceptedRequest {
       queryParameters.hashCode ^
       body.hashCode ^
       timestamp.hashCode ^
-      paused.hashCode;
+      paused.hashCode ^
+      clientType.hashCode;
 
   /// Helper method to serialize complex body types
   static dynamic _serializeBody(dynamic body) {

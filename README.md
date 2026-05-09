@@ -1,106 +1,359 @@
 # Interceptify
 
-Interceptify is a powerful Flutter DevTools extension that gives you total control over your application's network layer. It allows you to **intercept, inspect, and modify** network requests and responses in real-time, directly from your Flutter DevTools suite.
+<p align="center">
+  <img src="https://img.shields.io/badge/Flutter-DevTools_Extension-02569B?logo=flutter&logoColor=white" alt="Flutter DevTools Extension" />
+  <img src="https://img.shields.io/badge/Supports-Dio_%7C_http_%7C_GraphQL-blueviolet" alt="Supports Dio, http, GraphQL" />
+  <img src="https://img.shields.io/badge/Mode-Debug_Only-orange" alt="Debug Only — zero impact in release" />
+  <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License" />
+</p>
 
-Built specifically for the [Dio](https://pub.dev/packages/dio) package, Interceptify bridges the gap between your running app and your development environment, making it an essential tool for debugging complex API flows, testing edge cases, and simulating server responses.
+**Interceptify** is a Flutter DevTools extension that gives you full visibility and control over your app's network layer — intercept, inspect, filter, modify, and group HTTP traffic in real-time, right inside your IDE.
+
+It supports **Dio**, **`package:http`**, and **`graphql_flutter`** out of the box.
+
+> **Safe by design.** Interceptify is completely inactive in release builds (`kDebugMode` guard). No performance overhead, no data leaks in production.
 
 ---
 
-## 🚀 Features
+## Table of Contents
 
-### Real-Time Network Control
-*   **Live Interception**: Capture all outgoing requests and incoming responses as they happen.
-*   **On-the-Fly Modification**: Edit URLs, Headers, Query Parameters, and Bodies before they reach their destination.
-*   **Response Mocking**: Change status codes and response bodies to test how your app handles different server states.
+- [Features at a Glance](#-features-at-a-glance)
+- [Installation](#-installation)
+- [Quick Start](#-quick-start)
+  - [Dio](#using-dio)
+  - [package:http](#using-packagehttp)
+  - [graphql_flutter](#using-graphql_flutter)
+- [Using the DevTools Panel](#-using-the-devtools-panel)
+  - [Advanced Filters](#advanced-filters)
+  - [Smart Grouping](#smart-grouping)
+  - [Pause, Edit & Continue](#pause-edit--continue)
+- [Rules Engine](#-rules-engine)
+- [API Reference](#-api-reference)
+- [Tips & Tricks](#-tips--tricks)
 
-### Intelligent Rules Engine
-*   **Conditional Pausing**: Create rules based on URL patterns (contains, equals, starts with) or HTTP methods.
-*   **Granular Control**: Focus only on specific API endpoints while letting others pass through.
-*   **GraphQL Support**: Built-in logic to easily identify and target GraphQL transactions.
+---
 
-### Premium Developer Experience
-*   **Interactive JSON Viewer**: Navigate deep and complex JSON structures with node-level expand/collapse.
-*   **Node-Level Copy**: Hover over any JSON node to copy specific keys or entire objects to your clipboard.
-*   **Copy as cURL**: Instantly export any captured request as a formatted cURL command for testing in Postman or terminal.
-*   **Global Toggles**: One-click to pause all requests or responses, or disable interception entirely.
-*   **Request Retry**: Instantly retry any captured request with its original or modified data.
-*   **Dynamic Timeouts**: Configure how long requests should wait for your input before auto-resuming.
+## ✨ Features at a Glance
+
+| Category | What it does |
+|---|---|
+| **Multi-client** | Works with Dio, `package:http`, and `graphql_flutter` |
+| **Live inspection** | See every request and response as it happens |
+| **Advanced filters** | Regex search, method filter, status code, duration, failed-only |
+| **Smart grouping** | Group traffic by domain, path, method, client, or status — like Charles Proxy |
+| **Pause & modify** | Freeze any request/response, edit its headers/body, then resume |
+| **Response mocking** | Change status codes and bodies without touching your backend |
+| **Retry** | Re-send any captured request with one click |
+| **Copy as cURL** | Instantly export any request for use in Postman or your terminal |
+| **Rules engine** | Define rules to auto-pause requests matching URL patterns or HTTP methods |
 
 ---
 
 ## 📦 Installation
 
-Add `interceptify` to your `pubspec.yaml` dependencies:
+Add `interceptify` to your `pubspec.yaml`, along with the HTTP client(s) you use:
 
 ```yaml
 dependencies:
-  interceptify: ^latest_version
+  interceptify: ^0.0.1
+
+  dio: ^5.4.0              # if you use Dio
+  http: ^1.2.0             # if you use package:http
+  graphql_flutter: ^5.1.2  # if you use GraphQL
 ```
 
 Then run:
+
 ```bash
 flutter pub get
 ```
 
 ---
 
-## 🛠️ Getting Started
+## 🚀 Quick Start
 
-### 1. Initialize the Bridge
-Initialize Interceptify at the start of your application to establish the communication bridge with DevTools.
+All three integrations share the same first step: **call `Interceptify.initialize()` once before `runApp()`**. Everything else depends on which HTTP client you use.
+
+---
+
+### Using Dio
 
 ```dart
+import 'package:dio/dio.dart';
 import 'package:interceptify/interceptify.dart';
 
-void main() async {
-  // Initialize the bridge
-  final interceptify = await Interceptify.initialize();
-  
-  runApp(MyApp(interceptify: interceptify));
+void main() {
+  Interceptify.initialize(); // must be called first
+
+  final dio = Dio();
+  dio.interceptors.add(Interceptify.dioInterceptor);
+
+  // Register the instance to enable the Retry feature in DevTools
+  Interceptify.registerDioInstance(dio);
+
+  runApp(MyApp(dio: dio));
 }
 ```
 
-### 2. Configure Dio
-Add the Interceptify interceptor to your Dio instance. To enable the **Retry** feature, make sure to register the Dio instance as well.
+That's it — use `dio` as you normally would. Every request will appear in the DevTools panel automatically.
+
+---
+
+### Using `package:http`
+
+Instead of creating `http.Client()` directly, wrap it with `Interceptify.httpClient()`:
 
 ```dart
-final dio = Dio();
+import 'package:http/http.dart' as http;
+import 'package:interceptify/interceptify.dart';
 
-// Add the interceptor
-dio.interceptors.add(interceptify.interceptor);
+void main() {
+  Interceptify.initialize();
 
-// Register the instance (required for Retry functionality)
-interceptify.registerDioInstance(dio);
+  // Drop-in replacement for http.Client()
+  final client = Interceptify.httpClient();
+
+  runApp(MyApp(client: client));
+}
+```
+
+Use `client` exactly like a regular `http.Client`:
+
+```dart
+// GET
+final response = await client.get(
+  Uri.parse('https://api.example.com/users'),
+  headers: {'Authorization': 'Bearer $token'},
+);
+
+// POST with JSON body
+await client.post(
+  Uri.parse('https://api.example.com/posts'),
+  headers: {'Content-Type': 'application/json'},
+  body: jsonEncode({'title': 'Hello', 'userId': 1}),
+);
+
+// Always close the client when you're done
+client.close();
+```
+
+Requests made with this client appear in DevTools with an **HTTP** badge and can be separated from other traffic using the *"By HTTP Client"* grouping.
+
+---
+
+### Using `graphql_flutter`
+
+Because `interceptify` intentionally has no compile-time dependency on `graphql_flutter`, you need a small adapter file in your own project to bridge the two.
+
+**Step 1 — Create `interceptify_link_adapter.dart` anywhere in your project:**
+
+```dart
+import 'package:gql_exec/gql_exec.dart';
+import 'package:gql_link/gql_link.dart';
+import 'package:interceptify/interceptify.dart';
+
+/// Bridges InterceptifyGraphQLLink into the standard gql_link chain.
+class InterceptifyLinkAdapter extends Link {
+  final InterceptifyGraphQLLink interceptifyLink;
+  InterceptifyLinkAdapter({required this.interceptifyLink});
+
+  @override
+  Stream<Response> request(Request request, [NextLink? forward]) {
+    return interceptifyLink
+        .request(request, forward != null ? (r) => forward(r as Request) : null)
+        .cast<Response>();
+  }
+}
+```
+
+**Step 2 — Wire it into your GraphQL client:**
+
+```dart
+import 'package:graphql_flutter/graphql_flutter.dart';
+import 'package:interceptify/interceptify.dart';
+import 'interceptify_link_adapter.dart';
+
+void main() {
+  Interceptify.initialize();
+
+  const endpoint = 'https://api.example.com/graphql';
+
+  final client = GraphQLClient(
+    link: InterceptifyLinkAdapter(
+      interceptifyLink: Interceptify.graphqlLink(
+        next: HttpLink(endpoint),
+        endpoint: endpoint,
+      ),
+    ),
+    cache: GraphQLCache(),
+  );
+
+  runApp(MyApp(client: client));
+}
+```
+
+**Step 3 — Use `graphql_flutter` as usual:**
+
+```dart
+// Query
+final result = await client.query(QueryOptions(
+  document: gql(r'''
+    query GetUsers {
+      users { id name email }
+    }
+  '''),
+));
+
+// Mutation with variables
+await client.mutate(MutationOptions(
+  document: gql(r'''
+    mutation CreateUser($name: String!) {
+      createUser(name: $name) { id }
+    }
+  '''),
+  variables: {'name': 'John'},
+));
+```
+
+GraphQL operations appear in DevTools with the method **GRAPHQL**. Their request body shows `operationName`, `query`, `variables`, and `type` (query / mutation / subscription).
+
+---
+
+## 🖥 Using the DevTools Panel
+
+1. Run your app in **Debug Mode** (`flutter run`).
+2. Open Flutter DevTools in your browser or IDE.
+3. Click the **Interceptify** tab.
+
+The panel is split into two areas:
+- **Left panel** — the request list with filter and grouping controls.
+- **Right panel** — the detail view for the selected request, with tabs for Headers, Body, and Response.
+
+---
+
+### Advanced Filters
+
+Click the **filter icon** (🔽) to the right of the search bar to expand the filter panel.
+
+| Filter | How it works |
+|---|---|
+| **Search** | Type any text to search by URL or HTTP method |
+| **Regex mode** | Click `.*` in the search bar to switch to regex. The icon turns red if the pattern is invalid. |
+| **Method** | Click any method chip to include it. Multiple selections are supported. |
+| **Status Code** | Filter by status family: Any / 2xx / 3xx / 4xx / 5xx |
+| **Duration** | Filter by response time: Any / < 100ms / 100–500ms / > 500ms |
+| **Failed Only** | Show only requests with an error or a status code ≥ 400 |
+
+Active filters appear as dismissible chips below the filter panel. Click **Clear filters** to reset everything at once.
+
+---
+
+### Smart Grouping
+
+By default, requests are shown as a flat list. Click **List / Grouped** in the summary bar to switch to grouped mode.
+
+When grouped, a strategy dropdown appears next to the toggle:
+
+| Strategy | Groups requests by |
+|---|---|
+| **By Domain** | Hostname — e.g., `api.example.com`, `cdn.assets.com` |
+| **By Path Prefix** | First path segment — e.g., `/users`, `/auth`, `/products` |
+| **By Method** | HTTP method — GET, POST, GRAPHQL, etc. |
+| **By HTTP Client** | The client that made the request — Dio, HTTP, or GraphQL |
+| **By Status Code** | Status family — 2xx Success, 4xx Client Error, 5xx Server Error |
+
+Each group header shows a **request count badge** and a red **error count badge** when failures are present. Click any group to expand or collapse it.
+
+---
+
+### Pause, Edit & Continue
+
+This is where Interceptify becomes a real debugging superpower.
+
+1. **Create a rule** in the **Rules** tab (or enable *Pause All Requests* in the toolbar).
+2. When a matching request is made, it appears in the list as **PENDING** with an orange indicator.
+3. **Select the request** to open the detail view.
+4. Edit any field — headers, query parameters, request body, or response body.
+5. Click **Continue** to send it with your modifications, or **Cancel** to abort the request.
+
+---
+
+## 🛡️ Rules Engine
+
+Rules let you target specific requests for pausing, without affecting the rest of your traffic.
+
+### Creating a Rule (in DevTools UI)
+
+Go to the **Rules** tab → click **Add Rule** → configure the condition and value.
+
+### Toolbar Toggles
+
+| Toggle | Effect |
+|---|---|
+| **Intercepting** | Master switch — disables all interception when off |
+| **Pause Req** | Pauses every outgoing request, regardless of rules |
+| **Pause Res** | Pauses every incoming response before it reaches your app |
+
+### Rule Conditions
+
+| Condition | Matches when the request… |
+|---|---|
+| `urlContains` | URL contains the given string |
+| `urlEquals` | URL is exactly equal to the given string |
+| `urlStartsWith` | URL starts with the given string |
+| `methodEquals` | HTTP method matches (e.g., `POST`) |
+
+---
+
+## 📖 API Reference
+
+```dart
+// ── Initialization ────────────────────────────────────────────────────────
+Interceptify.initialize({bool debugLogging = true});
+
+// ── Interceptors ──────────────────────────────────────────────────────────
+Interceptify.dioInterceptor                           // add to dio.interceptors
+Interceptify.httpClient({http.Client? inner})         // wrap http.Client()
+Interceptify.graphqlLink({                            // use with adapter (see above)
+  required dynamic next,
+  String endpoint = 'GraphQL',
+})
+
+// ── Dio Retry Support ─────────────────────────────────────────────────────
+Interceptify.registerDioInstance(Dio dio);            // enables Retry in DevTools
+
+// ── Rules ─────────────────────────────────────────────────────────────────
+Interceptify.addRule(InterceptRule rule);
+Interceptify.removeRule(String ruleId);
+Interceptify.clearRules();
+List<InterceptRule> rules = Interceptify.getRules();
+
+// ── Global Control ────────────────────────────────────────────────────────
+Interceptify.enableInterception();
+Interceptify.disableInterception();
+
+// ── Diagnostics ───────────────────────────────────────────────────────────
+bool initialized    = Interceptify.isInitialized;
+int  pendingCount   = Interceptify.getPendingRequestCount();
+
+// ── Cleanup ───────────────────────────────────────────────────────────────
+Interceptify.dispose();
 ```
 
 ---
 
-## 📖 How to Use
+## 💡 Tips & Tricks
 
-1.  **Launch Your App**: Run your app in **Debug Mode**.
-2.  **Open DevTools**: Open Flutter DevTools in your browser or IDE.
-3.  **Find Interceptify**: Look for the **Interceptify** tab (represented by a **Shield** icon).
-4.  **Manage Rules**: 
-    *   Navigate to the **Rules** tab.
-    *   Choose a specific rule.
-    *   Create the rule that you want to pause.
-5.  **Intercept & Modify**:
-    *   When a matching request is made, it will appear as **PENDING** in the list.
-    *   Select the request, modify its details in the **Request** or **Response** tabs.
-    *   Click **Continue** at the bottom to let the transaction proceed.
+- **Combine filters**: use regex `^/users/\d+$` together with the *Failed Only* toggle to isolate broken user-detail endpoints instantly.
+- **Group by HTTP Client**: when debugging an issue that might be client-specific, this grouping separates Dio, HTTP, and GraphQL traffic into distinct sections.
+- **Copy as cURL**: every request can be exported as a ready-to-run cURL command — paste it straight into your terminal or Postman.
+- **Increase the timeout**: if you need more time to inspect or edit a request before it auto-resumes, go to **Rules → Settings** and raise the interception timeout.
+- **Retry without re-triggering**: use the **Retry** button in the detail view to resend a request without having to tap through your UI again — great for testing a fix immediately.
 
 ---
 
-## 💡 Pro Tips
+## 🤝 Contributing & Support
 
-*   **Quick Debugging**: Use the **Pause All Requests** or **Pause All Responses** toggles in the Rules tab to stop all traffic instantly without creating specific rules.
-*   **Avoiding Hangs**: If you are in a long debugging session, increase the **Interception Timeout** in **Rules > Settings** to prevent the app from auto-resuming too early.
-*   **JSON Shortcuts**: Use the arrow icons in the JSON viewer to collapse large objects/arrays and focus on relevant data.
-
----
-
-## 🤝 Support & Contribution
-
-Interceptify is an open-source project. If you encounter bugs, have feature requests, or want to contribute, please visit our GitHub repository.
+Interceptify is open source. Bug reports, feature requests, and pull requests are welcome on GitHub.
 
 **License**: MIT

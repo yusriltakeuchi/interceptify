@@ -1,0 +1,18 @@
+# Files and directories excluded from pub.dev publishing.
+# (pub.dev already excludes .dart_tool, build/, .git, etc. by default)
+
+# IDE
+.idea/
+.vscode/
+
+# Build artifacts
+**/build/
+coverage/
+doc/api/
+
+# Dev / CI
+Makefile
+.github/
+
+# Extension build output (the pre-built web/ is included, not the source build cache)
+extension/devtools/build/web/canvaskit/

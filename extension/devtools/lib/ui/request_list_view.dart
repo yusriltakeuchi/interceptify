@@ -2,7 +2,19 @@ import 'package:flutter/material.dart';
 
 import '../models/network_models.dart';
 
-/// Widget displaying list of intercepted requests
+// ---------------------------------------------------------------------------
+// Filter state
+// ---------------------------------------------------------------------------
+
+enum _StatusFilter { any, s2xx, s3xx, s4xx, s5xx }
+
+enum _DurationFilter { any, fast, medium, slow }
+
+// ---------------------------------------------------------------------------
+// Widget
+// ---------------------------------------------------------------------------
+
+/// Widget displaying list of intercepted requests with advanced filtering.
 class RequestListView extends StatefulWidget {
   final List<NetworkRequest> requests;
   final Map<String, NetworkResponse> responses;
@@ -24,62 +36,151 @@ class RequestListView extends StatefulWidget {
 }
 
 class _RequestListViewState extends State<RequestListView> {
+  // --- Search ---
   String _searchQuery = '';
+  bool _isRegexMode = false;
+  bool _regexInvalid = false;
+
+  // --- Advanced filter panel visibility ---
+  bool _showFilters = false;
+
+  // --- Method filter ---
+  final Set<String> _selectedMethods = {}; // empty = all
+
+  // --- Status code filter ---
+  _StatusFilter _statusFilter = _StatusFilter.any;
+
+  // --- Duration filter ---
+  _DurationFilter _durationFilter = _DurationFilter.any;
+
+  // --- Failed only ---
+  bool _failedOnly = false;
+
+  // ---------------------------------------------------------------------------
+  // Filtering logic
+  // ---------------------------------------------------------------------------
+
+  bool _matchesSearch(NetworkRequest r) {
+    if (_searchQuery.isEmpty) return true;
+    if (_isRegexMode) {
+      try {
+        final regex = RegExp(_searchQuery, caseSensitive: false);
+        return regex.hasMatch(r.url) || regex.hasMatch(r.method);
+      } catch (_) {
+        return false;
+      }
+    }
+    final q = _searchQuery.toLowerCase();
+    return r.url.toLowerCase().contains(q) ||
+        r.method.toLowerCase().contains(q);
+  }
+
+  bool _matchesMethod(NetworkRequest r) {
+    if (_selectedMethods.isEmpty) return true;
+    return _selectedMethods.contains(r.method.toUpperCase());
+  }
+
+  bool _matchesStatus(NetworkRequest r) {
+    if (_statusFilter == _StatusFilter.any) return true;
+    final resp = widget.responses[r.id];
+    if (resp == null) return false;
+    final code = resp.statusCode ?? 0;
+    switch (_statusFilter) {
+      case _StatusFilter.s2xx:
+        return code >= 200 && code < 300;
+      case _StatusFilter.s3xx:
+        return code >= 300 && code < 400;
+      case _StatusFilter.s4xx:
+        return code >= 400 && code < 500;
+      case _StatusFilter.s5xx:
+        return code >= 500;
+      case _StatusFilter.any:
+        return true;
+    }
+  }
+
+  bool _matchesDuration(NetworkRequest r) {
+    if (_durationFilter == _DurationFilter.any) return true;
+    final resp = widget.responses[r.id];
+    if (resp == null) return false;
+    final ms = resp.durationMillis;
+    switch (_durationFilter) {
+      case _DurationFilter.fast:
+        return ms < 100;
+      case _DurationFilter.medium:
+        return ms >= 100 && ms <= 500;
+      case _DurationFilter.slow:
+        return ms > 500;
+      case _DurationFilter.any:
+        return true;
+    }
+  }
+
+  bool _matchesFailed(NetworkRequest r) {
+    if (!_failedOnly) return true;
+    final resp = widget.responses[r.id];
+    final err = widget.errors[r.id];
+    if (err != null) return true;
+    if (resp != null && (resp.statusCode ?? 0) >= 400) return true;
+    return false;
+  }
 
   List<NetworkRequest> get _filteredRequests {
-    if (_searchQuery.isEmpty) {
-      return widget.requests;
-    }
-    return widget.requests
-        .where(
-          (r) =>
-              r.url.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-              r.method.toLowerCase().contains(_searchQuery.toLowerCase()),
-        )
-        .toList();
+    return widget.requests.where((r) {
+      return _matchesSearch(r) &&
+          _matchesMethod(r) &&
+          _matchesStatus(r) &&
+          _matchesDuration(r) &&
+          _matchesFailed(r);
+    }).toList();
   }
+
+  bool get _hasActiveFilters =>
+      _selectedMethods.isNotEmpty ||
+      _statusFilter != _StatusFilter.any ||
+      _durationFilter != _DurationFilter.any ||
+      _failedOnly;
+
+  void _clearFilters() {
+    setState(() {
+      _selectedMethods.clear();
+      _statusFilter = _StatusFilter.any;
+      _durationFilter = _DurationFilter.any;
+      _failedOnly = false;
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Build
+  // ---------------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Search bar
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: TextField(
-            decoration: InputDecoration(
-              hintText: 'Search URL or method...',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: _searchQuery.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        setState(() => _searchQuery = '');
-                      },
-                    )
-                  : null,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            onChanged: (value) {
-              setState(() => _searchQuery = value);
-            },
-          ),
-        ),
-        // Request list
+        _buildSearchBar(),
+        if (_showFilters) _buildFilterPanel(),
+        if (_hasActiveFilters) _buildActiveFilterChips(),
         Expanded(
           child: _filteredRequests.isEmpty
-              ? const Center(child: Text('No requests yet'))
+              ? Center(
+                  child: Text(
+                    _searchQuery.isNotEmpty || _hasActiveFilters
+                        ? 'No requests match filters'
+                        : 'No requests yet',
+                    style: TextStyle(color: Theme.of(context).disabledColor),
+                  ),
+                )
               : ListView.builder(
                   itemCount: _filteredRequests.length,
                   itemBuilder: (context, index) {
                     final request = _filteredRequests[index];
                     final response = widget.responses[request.id];
                     final error = widget.errors[request.id];
-                    final isSelected = widget.selectedRequest?.id == request.id;
+                    final isSelected =
+                        widget.selectedRequest?.id == request.id;
 
-                    return _RequestItem(
+                    return RequestItem(
                       request: request,
                       response: response,
                       error: error,
@@ -92,16 +193,460 @@ class _RequestListViewState extends State<RequestListView> {
       ],
     );
   }
+
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: _isRegexMode
+                    ? 'Regex search (e.g. /users/\\d+)…'
+                    : 'Search URL or method…',
+                prefixIcon: const Icon(Icons.search, size: 18),
+                suffixIcon: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Regex toggle
+                    Tooltip(
+                      message: 'Regex mode',
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () => setState(() {
+                          _isRegexMode = !_isRegexMode;
+                          _regexInvalid = false;
+                        }),
+                        child: Padding(
+                          padding: const EdgeInsets.all(6),
+                          child: Text(
+                            '.*',
+                            style: TextStyle(
+                              fontFamily: 'monospace',
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: _regexInvalid
+                                  ? Colors.red
+                                  : _isRegexMode
+                                      ? Theme.of(context).colorScheme.primary
+                                      : Theme.of(context).disabledColor,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Clear search
+                    if (_searchQuery.isNotEmpty)
+                      IconButton(
+                        icon: const Icon(Icons.clear, size: 16),
+                        onPressed: () => setState(() {
+                          _searchQuery = '';
+                          _regexInvalid = false;
+                        }),
+                      ),
+                  ],
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(
+                    color: _regexInvalid
+                        ? Colors.red
+                        : Theme.of(context).dividerColor,
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(
+                    color: _regexInvalid
+                        ? Colors.red
+                        : Theme.of(context).dividerColor,
+                  ),
+                ),
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 8,
+                ),
+              ),
+              onChanged: (value) {
+                bool invalid = false;
+                if (_isRegexMode && value.isNotEmpty) {
+                  try {
+                    RegExp(value);
+                  } catch (_) {
+                    invalid = true;
+                  }
+                }
+                setState(() {
+                  _searchQuery = value;
+                  _regexInvalid = invalid;
+                });
+              },
+            ),
+          ),
+          const SizedBox(width: 6),
+          // Filter toggle
+          Tooltip(
+            message: _showFilters ? 'Hide filters' : 'Show filters',
+            child: InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: () => setState(() => _showFilters = !_showFilters),
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: _hasActiveFilters
+                      ? Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.15)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: _hasActiveFilters
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).dividerColor,
+                  ),
+                ),
+                child: Icon(
+                  Icons.filter_list,
+                  size: 18,
+                  color: _hasActiveFilters
+                      ? Theme.of(context).colorScheme.primary
+                      : null,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterPanel() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(8, 0, 8, 4),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Theme.of(context).dividerColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Method chips
+          _buildFilterLabel('Method'),
+          const SizedBox(height: 4),
+          Wrap(
+            spacing: 4,
+            runSpacing: 4,
+            children: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'GRAPHQL']
+                .map((m) => _MethodChip(
+                      method: m,
+                      selected: _selectedMethods.contains(m),
+                      onToggle: () => setState(() {
+                        if (_selectedMethods.contains(m)) {
+                          _selectedMethods.remove(m);
+                        } else {
+                          _selectedMethods.add(m);
+                        }
+                      }),
+                    ))
+                .toList(),
+          ),
+          const SizedBox(height: 8),
+
+          // Status + Duration row
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildFilterLabel('Status'),
+                    const SizedBox(height: 4),
+                    _buildDropdown<_StatusFilter>(
+                      value: _statusFilter,
+                      items: const {
+                        _StatusFilter.any: 'Any',
+                        _StatusFilter.s2xx: '2xx',
+                        _StatusFilter.s3xx: '3xx',
+                        _StatusFilter.s4xx: '4xx',
+                        _StatusFilter.s5xx: '5xx',
+                      },
+                      onChanged: (v) => setState(() => _statusFilter = v!),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildFilterLabel('Duration'),
+                    const SizedBox(height: 4),
+                    _buildDropdown<_DurationFilter>(
+                      value: _durationFilter,
+                      items: const {
+                        _DurationFilter.any: 'Any',
+                        _DurationFilter.fast: '< 100ms',
+                        _DurationFilter.medium: '100–500ms',
+                        _DurationFilter.slow: '> 500ms',
+                      },
+                      onChanged: (v) => setState(() => _durationFilter = v!),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Failed only
+          Row(
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: Checkbox(
+                  value: _failedOnly,
+                  onChanged: (v) => setState(() => _failedOnly = v ?? false),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Text('Failed only', style: TextStyle(fontSize: 12)),
+              const Spacer(),
+              if (_hasActiveFilters)
+                TextButton(
+                  onPressed: _clearFilters,
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text(
+                    'Clear filters',
+                    style: TextStyle(fontSize: 11),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActiveFilterChips() {
+    final chips = <Widget>[];
+
+    for (final m in _selectedMethods) {
+      chips.add(_ActiveChip(
+        label: m,
+        onRemove: () => setState(() => _selectedMethods.remove(m)),
+      ));
+    }
+    if (_statusFilter != _StatusFilter.any) {
+      final labels = {
+        _StatusFilter.s2xx: '2xx',
+        _StatusFilter.s3xx: '3xx',
+        _StatusFilter.s4xx: '4xx',
+        _StatusFilter.s5xx: '5xx',
+      };
+      chips.add(_ActiveChip(
+        label: 'Status: ${labels[_statusFilter]}',
+        onRemove: () => setState(() => _statusFilter = _StatusFilter.any),
+      ));
+    }
+    if (_durationFilter != _DurationFilter.any) {
+      final labels = {
+        _DurationFilter.fast: '< 100ms',
+        _DurationFilter.medium: '100–500ms',
+        _DurationFilter.slow: '> 500ms',
+      };
+      chips.add(_ActiveChip(
+        label: labels[_durationFilter]!,
+        onRemove: () =>
+            setState(() => _durationFilter = _DurationFilter.any),
+      ));
+    }
+    if (_failedOnly) {
+      chips.add(_ActiveChip(
+        label: 'Failed only',
+        onRemove: () => setState(() => _failedOnly = false),
+      ));
+    }
+
+    if (chips.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
+      child: Wrap(spacing: 4, runSpacing: 4, children: chips),
+    );
+  }
+
+  Widget _buildFilterLabel(String label) {
+    return Text(
+      label,
+      style: TextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.bold,
+        color: Theme.of(context).disabledColor,
+        letterSpacing: 0.5,
+      ),
+    );
+  }
+
+  Widget _buildDropdown<T>({
+    required T value,
+    required Map<T, String> items,
+    required ValueChanged<T?> onChanged,
+  }) {
+    return SizedBox(
+      height: 30,
+      child: DropdownButtonFormField<T>(
+        value: value,
+        isDense: true,
+        decoration: InputDecoration(
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(6),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+        ),
+        items: items.entries
+            .map((e) => DropdownMenuItem<T>(
+                  value: e.key,
+                  child: Text(e.value, style: const TextStyle(fontSize: 11)),
+                ))
+            .toList(),
+        onChanged: onChanged,
+      ),
+    );
+  }
 }
 
-class _RequestItem extends StatelessWidget {
+// ---------------------------------------------------------------------------
+// Sub-widgets
+// ---------------------------------------------------------------------------
+
+class _MethodChip extends StatelessWidget {
+  final String method;
+  final bool selected;
+  final VoidCallback onToggle;
+
+  const _MethodChip({
+    required this.method,
+    required this.selected,
+    required this.onToggle,
+  });
+
+  Color _methodColor(String m) {
+    switch (m) {
+      case 'GET':
+        return Colors.blue;
+      case 'POST':
+        return Colors.green;
+      case 'PUT':
+        return Colors.orange;
+      case 'DELETE':
+        return Colors.red;
+      case 'PATCH':
+        return Colors.purple;
+      case 'GRAPHQL':
+        return Colors.deepPurple;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _methodColor(method);
+    return InkWell(
+      onTap: onToggle,
+      borderRadius: BorderRadius.circular(4),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: selected ? color : color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: selected ? color : color.withValues(alpha: 0.4),
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Text(
+          method,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            color: selected ? Colors.white : color,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ActiveChip extends StatelessWidget {
+  final String label;
+  final VoidCallback onRemove;
+
+  const _ActiveChip({required this.label, required this.onRemove});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 2),
+          InkWell(
+            onTap: onRemove,
+            child: Icon(
+              Icons.close,
+              size: 11,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Request item (unchanged logic, pulled into its own StatelessWidget)
+// ---------------------------------------------------------------------------
+
+class RequestItem extends StatelessWidget {
   final NetworkRequest request;
   final NetworkResponse? response;
   final NetworkError? error;
   final bool isSelected;
   final VoidCallback onTap;
 
-  const _RequestItem({
+  const RequestItem({
     required this.request,
     this.response,
     this.error,
@@ -125,7 +670,6 @@ class _RequestItem extends StatelessWidget {
     if (contentType.contains('html')) return 'HTML';
     if (contentType.contains('xml')) return 'XML';
     if (contentType.contains('text')) return 'TEXT';
-    // Fallback: infer from body
     final body = response.body;
     if (body is Map || body is List) return 'JSON';
     if (body is String) {
@@ -172,6 +716,8 @@ class _RequestItem extends StatelessWidget {
         return Colors.red;
       case 'PATCH':
         return Colors.purple;
+      case 'GRAPHQL':
+        return Colors.deepPurple;
       default:
         return Colors.grey;
     }
@@ -241,11 +787,39 @@ class _RequestItem extends StatelessWidget {
               _buildStatusText(context),
               const SizedBox(width: 6),
               _buildResponseTypeBadge(responseType),
+              if (request.clientType != 'dio') ...[
+                const SizedBox(width: 4),
+                _buildClientBadge(request.clientType),
+              ],
               const Spacer(),
               _buildTimestampAndStatusIcon(context),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildClientBadge(String clientType) {
+    const colors = {
+      'http': Colors.teal,
+      'graphql': Colors.deepPurple,
+    };
+    final color = colors[clientType] ?? Colors.grey;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(color: color.withValues(alpha: 0.5), width: 0.8),
+      ),
+      child: Text(
+        clientType.toUpperCase(),
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.bold,
+          color: color,
+        ),
       ),
     );
   }
@@ -268,7 +842,7 @@ class _RequestItem extends StatelessWidget {
       );
     } else {
       return const Text(
-        'Pending...',
+        'Pending…',
         style: TextStyle(
           fontSize: 10,
           fontStyle: FontStyle.italic,
@@ -307,7 +881,7 @@ class _RequestItem extends StatelessWidget {
     return Row(
       children: [
         Text(
-          "${_formatTimestamp(request.timestamp)} · ",
+          '${_formatTimestamp(request.timestamp)} · ',
           style: TextStyle(fontSize: 9, color: Theme.of(context).disabledColor),
         ),
         if (response != null && !request.paused)

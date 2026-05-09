@@ -9,6 +9,9 @@ class NetworkRequest {
   final DateTime timestamp;
   final bool paused;
 
+  /// Which HTTP client produced this request: 'dio' | 'http' | 'graphql'
+  final String clientType;
+
   NetworkRequest({
     required this.id,
     required this.method,
@@ -18,6 +21,7 @@ class NetworkRequest {
     this.body,
     required this.timestamp,
     this.paused = false,
+    this.clientType = 'dio',
   });
 
   factory NetworkRequest.fromJson(Map<String, dynamic> json) {
@@ -30,6 +34,7 @@ class NetworkRequest {
       body: json['body'],
       timestamp: DateTime.parse(json['timestamp'] as String),
       paused: json['paused'] as bool? ?? false,
+      clientType: json['clientType'] as String? ?? 'dio',
     );
   }
 }
