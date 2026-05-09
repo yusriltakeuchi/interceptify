@@ -1,5 +1,5 @@
 name: interceptify
-description: A Flutter DevTools extension for real-time network inspection. Intercept, pause, modify, and replay requests from Dio and package:http directly inside your IDE.
+description: A Flutter DevTools extension for real-time network inspection. Intercept, pause, modify, and replay requests from Dio and package:http directly inside your DevTools.
 version: 0.0.1+3
 homepage: https://github.com/yusriltakeuchi/interceptify
 repository: https://github.com/yusriltakeuchi/interceptify
