@@ -67,7 +67,7 @@ Add `interceptify` to your `pubspec.yaml`, along with the HTTP client(s) you use
 
 ```yaml
 dependencies:
-  interceptify: ^0.0.1+3
+  interceptify: ^0.0.1+4
 
   dio: ^5.9.2              # if you use Dio
   http: ^1.6.0             # if you use package:http

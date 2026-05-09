@@ -1,5 +1,11 @@
-## 0.0.1+3
+## 0.0.1+4
 
+*Released: 2026-05-09*
+
+**Improvements**
+- Updated `vm_service` dependency constraint to `^15.2.0` to support the latest Dart/Flutter versions.
+
+## 0.0.1+3
 *Released: 2026-05-09*
 
 **Improvements**
