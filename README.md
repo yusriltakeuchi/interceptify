@@ -9,6 +9,10 @@
 
 **Interceptify** is a Flutter DevTools extension that gives you full visibility and control over your app's network layer — intercept, inspect, filter, modify, and group HTTP traffic in real-time, right inside your IDE.
 
+<p align="center">
+  <img src="screenshots/Interceptify_Screenshot.png" alt="Interceptify Screenshot" width="800" />
+</p>
+
 It supports **Dio** and **`package:http`** out of the box.
 
 > **Safe by design.** Interceptify is completely inactive in release builds (`kDebugMode` guard). No performance overhead, no data leaks in production.
