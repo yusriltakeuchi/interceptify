@@ -1,6 +1,7 @@
 # Interceptify
 
 <p align="center">
+  <a href="https://pub.dev/packages/interceptify"><img src="https://img.shields.io/pub/v/interceptify.svg" alt="Pub Package"></a>
   <img src="https://img.shields.io/badge/Flutter-DevTools_Extension-02569B?logo=flutter&logoColor=white" alt="Flutter DevTools Extension" />
   <img src="https://img.shields.io/badge/Supports-Dio_%7C_http-blueviolet" alt="Supports Dio, http" />
   <img src="https://img.shields.io/badge/Mode-Debug_Only-orange" alt="Debug Only — zero impact in release" />
@@ -10,7 +11,7 @@
 **Interceptify** is a Flutter DevTools extension that gives you full visibility and control over your app's network layer. You can intercept, inspect, filter, modify, and group HTTP traffic in real-time, right inside your DevTools.
 
 <p align="center">
-  <img src="screenshots/Interceptify_Screenshot.png" alt="Interceptify Screenshot" width="800" />
+  <img src="https://raw.githubusercontent.com/yusriltakeuchi/interceptify/refs/heads/main/screenshots/Interceptify_Screenshot.png" alt="Interceptify Screenshot" width="800" />
 </p>
 
 ### Supported HTTP Clients

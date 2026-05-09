@@ -1,3 +1,17 @@
+## 0.0.1+2
+
+*Released: 2026-05-09*
+
+**Bug Fixes**
+- Fixed query parameter duplication when continuing a paused request.
+- Fixed a bug where interception rules disappeared from the DevTools UI after navigating to a different tab. 
+- Fixed `FormData` serialization so multipart requests are now properly readable as JSON in the DevTools panel.
+
+**Improvements**
+- Improved text selectability across the DevTools UI (URLs, headers, and query parameters can now be highlighted and copied).
+- URLs are now properly decoded for better readability in the request list and detail view.
+- Added a "Supported HTTP Clients" table to the README, detailing planned support for `graphql_flutter`, `chopper`, and `grpc`.
+
 ## 0.0.1
 
 *Released: 2026-05-09*
