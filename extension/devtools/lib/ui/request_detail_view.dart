@@ -38,8 +38,8 @@ class _RequestDetailViewState extends State<RequestDetailView>
   dynamic _editedResponseBody;
   bool _isEditingResponse = false;
 
-  final _bodyController = TextEditingController();
-  final _responseBodyController = TextEditingController();
+  final _bodyController = JsonCodeController();
+  final _responseBodyController = JsonCodeController();
   final _statusCodeController = TextEditingController();
   final _urlController = TextEditingController();
 
@@ -753,38 +753,86 @@ class _RequestDetailViewState extends State<RequestDetailView>
             const SizedBox(height: 12),
           ],
           Container(
-            height: 350,
+            height: 400,
             decoration: BoxDecoration(
               color: const Color(0xFF1E1E1E),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: Colors.blueAccent.withValues(alpha: 0.3),
+                color: Colors.blueAccent.withValues(alpha: 0.2),
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            child: TextField(
-              maxLines: null,
-              expands: true,
-              controller: controller,
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.all(12),
-                hintText: 'Enter JSON here...',
-                hintStyle: TextStyle(color: Colors.grey.withValues(alpha: 0.5)),
-              ),
-              style: const TextStyle(
-                fontFamily: 'monospace',
-                fontSize: 13,
-                color: Color(0xFFD4D4D4),
-              ),
-              onChanged: (v) {
-                try {
-                  onChanged(
-                    v.startsWith('{') || v.startsWith('[') ? jsonDecode(v) : v,
-                  );
-                } catch (_) {
-                  onChanged(v);
-                }
-              },
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              children: [
+                // Editor Toolbar
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    border: Border(
+                      bottom: BorderSide(
+                        color: Colors.white.withValues(alpha: 0.05),
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        label.toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const Spacer(),
+                      _EditorActionButton(
+                        icon: Icons.format_align_left,
+                        label: 'Format',
+                        onPressed: () {
+                          try {
+                            final obj = jsonDecode(controller.text);
+                            final pretty =
+                                const JsonEncoder.withIndent('  ').convert(obj);
+                            controller.text = pretty;
+                            onChanged(obj);
+                          } catch (_) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Invalid JSON')),
+                            );
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                // Main Editor Area
+                Expanded(
+                  child: JsonCodeEditor(
+                    controller: controller,
+                    onChanged: (v) {
+                      try {
+                        onChanged(
+                          v.startsWith('{') || v.startsWith('[')
+                              ? jsonDecode(v)
+                              : v,
+                        );
+                      } catch (_) {
+                        onChanged(v);
+                      }
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -1067,12 +1115,11 @@ class _JsonNodeViewerState extends State<JsonNodeViewer> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? Colors.white70 : Colors.black87;
-    final keyColor = isDark ? Colors.cyanAccent : Colors.blue.shade700;
-    final stringColor = isDark ? Colors.greenAccent : Colors.green.shade700;
-    final numberColor = isDark ? Colors.orangeAccent : Colors.orange.shade800;
-    final boolColor = isDark ? Colors.blueAccent : Colors.deepPurple.shade700;
+    final baseColor = const Color(0xFFD4D4D4);
+    final keyColor = const Color(0xFF9CDCFE);
+    final stringColor = const Color(0xFFCE9178);
+    final numberColor = const Color(0xFFB5CEA8);
+    final boolColor = const Color(0xFF569CD6);
 
     Widget buildKey() {
       if (widget.keyName == null) return const SizedBox.shrink();
@@ -1081,7 +1128,7 @@ class _JsonNodeViewerState extends State<JsonNodeViewer> {
         style: TextStyle(
           color: keyColor,
           fontFamily: 'monospace',
-          fontSize: 12,
+          fontSize: 13,
         ),
       );
     }
@@ -1107,7 +1154,7 @@ class _JsonNodeViewerState extends State<JsonNodeViewer> {
                   style: TextStyle(
                     color: baseColor,
                     fontFamily: 'monospace',
-                    fontSize: 12,
+                    fontSize: 13,
                   ),
                 ),
                 const Spacer(),
@@ -1152,7 +1199,7 @@ class _JsonNodeViewerState extends State<JsonNodeViewer> {
                       style: TextStyle(
                         color: baseColor,
                         fontFamily: 'monospace',
-                        fontSize: 12,
+                        fontSize: 13,
                       ),
                     ),
                     if (!_expanded)
@@ -1161,7 +1208,7 @@ class _JsonNodeViewerState extends State<JsonNodeViewer> {
                         style: TextStyle(
                           color: Colors.grey,
                           fontFamily: 'monospace',
-                          fontSize: 12,
+                          fontSize: 13,
                         ),
                       ),
                     const Spacer(),
@@ -1196,7 +1243,7 @@ class _JsonNodeViewerState extends State<JsonNodeViewer> {
                 style: TextStyle(
                   color: baseColor,
                   fontFamily: 'monospace',
-                  fontSize: 12,
+                  fontSize: 13,
                 ),
               ),
             ),
@@ -1232,7 +1279,7 @@ class _JsonNodeViewerState extends State<JsonNodeViewer> {
                         style: TextStyle(
                           color: baseColor,
                           fontFamily: 'monospace',
-                          fontSize: 12,
+                          fontSize: 13,
                         ),
                       ),
                   ],
@@ -1276,7 +1323,232 @@ class _JsonNodeViewerState extends State<JsonNodeViewer> {
 
     return TextSpan(
       text: text,
-      style: TextStyle(color: color, fontFamily: 'monospace', fontSize: 12),
+      style: TextStyle(color: color, fontFamily: 'monospace', fontSize: 13),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Modern Code Editor Components
+// ---------------------------------------------------------------------------
+
+class JsonCodeController extends TextEditingController {
+  @override
+  TextSpan buildTextSpan({
+    required BuildContext context,
+    TextStyle? style,
+    required bool withComposing,
+  }) {
+    final List<TextSpan> children = [];
+    final String text = this.text;
+
+    // VS Code-inspired colors
+    const keyColor = Color(0xFF9CDCFE);
+    const stringColor = Color(0xFFCE9178);
+    const numberColor = Color(0xFFB5CEA8);
+    const boolColor = Color(0xFF569CD6);
+    const braceColor = Color(0xFFD4D4D4);
+
+    final regExp = RegExp(
+      r'("(?:\\.|[^"\\])*")(?=\s*:)|' // 1: Keys
+      r'("(?:\\.|[^"\\])*")|' // 2: String values
+      r'\b(true|false|null)\b|' // 3: Literals
+      r'\b(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)\b|' // 4: Numbers
+      r'([\{\}\[\]\:\,])', // 5: Braces/Punctuation
+      multiLine: true,
+    );
+
+    int lastMatchEnd = 0;
+    for (final match in regExp.allMatches(text)) {
+      if (match.start > lastMatchEnd) {
+        children.add(
+          TextSpan(
+            text: text.substring(lastMatchEnd, match.start),
+            style: const TextStyle(color: Color(0xFFD4D4D4)),
+          ),
+        );
+      }
+
+      if (match.group(1) != null) {
+        children.add(
+          TextSpan(
+              text: match.group(1), style: const TextStyle(color: keyColor)),
+        );
+      } else if (match.group(2) != null) {
+        children.add(
+          TextSpan(
+            text: match.group(2),
+            style: const TextStyle(color: stringColor),
+          ),
+        );
+      } else if (match.group(3) != null) {
+        children.add(
+          TextSpan(
+            text: match.group(3),
+            style: const TextStyle(color: boolColor),
+          ),
+        );
+      } else if (match.group(4) != null) {
+        children.add(
+          TextSpan(
+            text: match.group(4),
+            style: const TextStyle(color: numberColor),
+          ),
+        );
+      } else if (match.group(5) != null) {
+        children.add(
+          TextSpan(
+            text: match.group(5),
+            style: const TextStyle(color: braceColor),
+          ),
+        );
+      }
+      lastMatchEnd = match.end;
+    }
+
+    if (lastMatchEnd < text.length) {
+      children.add(
+        TextSpan(
+          text: text.substring(lastMatchEnd),
+          style: const TextStyle(color: Color(0xFFD4D4D4)),
+        ),
+      );
+    }
+
+    return TextSpan(style: style, children: children);
+  }
+}
+
+class JsonCodeEditor extends StatefulWidget {
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+  final String hintText;
+
+  const JsonCodeEditor({
+    super.key,
+    required this.controller,
+    required this.onChanged,
+    this.hintText = 'Enter JSON here...',
+  });
+
+  @override
+  State<JsonCodeEditor> createState() => _JsonCodeEditorState();
+}
+
+class _JsonCodeEditorState extends State<JsonCodeEditor> {
+  late ScrollController _mainScrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _mainScrollController = ScrollController();
+  }
+
+  @override
+  void dispose() {
+    _mainScrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Gutter (Line Numbers)
+        Container(
+          width: 40,
+          padding: const EdgeInsets.only(top: 12),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.15),
+            border: Border(
+              right: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+            ),
+          ),
+          child: ListenableBuilder(
+            listenable: widget.controller,
+            builder: (context, _) {
+              final lineCount =
+                  '\n'.allMatches(widget.controller.text).length + 1;
+              return Column(
+                children: List.generate(lineCount, (index) {
+                  return SizedBox(
+                    height: 20,
+                    child: Center(
+                      child: Text(
+                        '${index + 1}',
+                        style: TextStyle(
+                          color: Colors.grey.withValues(alpha: 0.5),
+                          fontSize: 10,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              );
+            },
+          ),
+        ),
+        // Editor
+        Expanded(
+          child: TextField(
+            controller: widget.controller,
+            maxLines: null,
+            expands: true,
+            decoration: InputDecoration(
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.all(12),
+              hintText: widget.hintText,
+              hintStyle: TextStyle(color: Colors.grey.withValues(alpha: 0.5)),
+            ),
+            style: const TextStyle(
+              fontFamily: 'monospace',
+              fontSize: 13,
+              color: Color(0xFFD4D4D4),
+              height: 1.54, // Match line height
+            ),
+            onChanged: widget.onChanged,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _EditorActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+
+  const _EditorActionButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(4),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        child: Row(
+          children: [
+            Icon(icon, size: 14, color: Colors.blueAccent),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 10,
+                color: Colors.blueAccent,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
