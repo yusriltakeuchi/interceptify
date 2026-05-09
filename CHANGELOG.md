@@ -9,12 +9,11 @@ Initial public release of Interceptify.
 **Multi-client network interception**
 - `InterceptifyDioInterceptor` — `QueuedInterceptor` implementation for Dio; captures requests, responses, and errors
 - `InterceptifyHttpClient` — `BaseClient` wrapper for `package:http`; drop-in replacement for `http.Client()`
-- `InterceptifyGraphQLLink` — duck-typed Link interceptor for `graphql_flutter`; no hard compile-time dependency on the package
 
 **Request lifecycle tracking**
 - Unique request ID assigned to every intercepted request
 - Start-time and duration measurement for response timing
-- `clientType` field (`'dio'` | `'http'` | `'graphql'`) attached to every event for client-level differentiation
+- `clientType` field (`'dio'` | `'http'`) attached to every event for client-level differentiation
 
 **Pause / Resume / Cancel**
 - Pause any request or response using the Rules Engine or global toggle
@@ -42,7 +41,7 @@ Initial public release of Interceptify.
 **Request List — Advanced Filters**
 - Full-text search by URL and HTTP method (literal or regex mode)
 - Regex mode with real-time invalid-pattern indicator
-- Method chip filter (GET / POST / PUT / PATCH / DELETE / GRAPHQL), multi-select
+- Method chip filter (GET / POST / PUT / PATCH / DELETE), multi-select
 - Status code family filter: Any / 2xx / 3xx / 4xx / 5xx
 - Duration filter: Any / < 100ms / 100–500ms / > 500ms
 - "Failed only" toggle (status ≥ 400 or error)
@@ -55,7 +54,7 @@ Initial public release of Interceptify.
   - By Domain (hostname)
   - By Path Prefix (first URL path segment)
   - By Method (HTTP method)
-  - By HTTP Client (Dio / HTTP / GraphQL)
+  - By HTTP Client (Dio / HTTP)
   - By Status Code family
 - Group headers show request count badge and red error count badge
 
@@ -76,8 +75,6 @@ Initial public release of Interceptify.
 
 ### Example App
 
-- Hub home screen with navigation to three example clients
+- Hub home screen with navigation to example clients
 - **Dio example** — GET, POST, PUT, DELETE against jsonplaceholder.typicode.com
 - **HTTP example** (`package:http`) — GET, POST, PUT, DELETE, and a 404 error scenario
-- **GraphQL example** (`graphql_flutter`) — five queries against the public Countries API (countries.trevorblades.com), including parameterised variables
-- `InterceptifyLinkAdapter` helper demonstrating how to bridge `InterceptifyGraphQLLink` into the `gql_link` chain

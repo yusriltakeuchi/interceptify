@@ -341,7 +341,7 @@ class _RequestListViewState extends State<RequestListView> {
           Wrap(
             spacing: 4,
             runSpacing: 4,
-            children: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'GRAPHQL']
+            children: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
                 .map((m) => _MethodChip(
                       method: m,
                       selected: _selectedMethods.contains(m),
@@ -506,7 +506,7 @@ class _RequestListViewState extends State<RequestListView> {
     return SizedBox(
       height: 30,
       child: DropdownButtonFormField<T>(
-        value: value,
+        initialValue: value,
         isDense: true,
         decoration: InputDecoration(
           border: OutlineInputBorder(
@@ -553,8 +553,6 @@ class _MethodChip extends StatelessWidget {
         return Colors.red;
       case 'PATCH':
         return Colors.purple;
-      case 'GRAPHQL':
-        return Colors.deepPurple;
       default:
         return Colors.grey;
     }
@@ -644,7 +642,7 @@ class RequestItem extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
 
-  const RequestItem({
+  const RequestItem({super.key, 
     required this.request,
     this.response,
     this.error,
@@ -713,8 +711,6 @@ class RequestItem extends StatelessWidget {
         return Colors.red;
       case 'PATCH':
         return Colors.purple;
-      case 'GRAPHQL':
-        return Colors.deepPurple;
       default:
         return Colors.grey;
     }
@@ -783,10 +779,9 @@ class RequestItem extends StatelessWidget {
               _buildStatusText(context),
               const SizedBox(width: 6),
               _buildResponseTypeBadge(responseType),
-              if (request.clientType != null &&
-                  request.clientType!.isNotEmpty) ...[
+              if (request.clientType.isNotEmpty) ...[
                 const SizedBox(width: 4),
-                _buildClientBadge(request.clientType!),
+                _buildClientBadge(request.clientType),
               ],
               const Spacer(),
               _buildTimestampAndStatusIcon(context),
@@ -801,7 +796,6 @@ class RequestItem extends StatelessWidget {
     const colors = {
       'dio': Colors.blue,
       'http': Colors.teal,
-      'graphql': Colors.deepPurple,
     };
     final color = colors[clientType] ?? Colors.grey;
     return Container(

@@ -243,8 +243,6 @@ class _GroupSection extends StatelessWidget {
             return Colors.red;
           case 'PATCH':
             return Colors.purple;
-          case 'GRAPHQL':
-            return Colors.deepPurple;
           default:
             return Colors.grey;
         }
@@ -258,8 +256,6 @@ class _GroupSection extends StatelessWidget {
         switch (groupKey) {
           case 'http':
             return Colors.teal;
-          case 'graphql':
-            return Colors.deepPurple;
           default:
             return Colors.blue;
         }

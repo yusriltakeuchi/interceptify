@@ -34,7 +34,6 @@ dependencies:
   cupertino_icons: ^1.0.8
   dio: ^5.4.0
   http: ^1.2.0
-  graphql_flutter: ^5.1.2
   interceptify:
     path: ../
 

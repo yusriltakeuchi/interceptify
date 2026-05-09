@@ -20,9 +20,9 @@ class InterceptifyDioInterceptor extends QueuedInterceptor {
     required PendingRequestManager pendingRequestManager,
     required RuleManager ruleManager,
     required DevtoolsBridge devtoolsBridge,
-  }) : _pendingRequestManager = pendingRequestManager,
-       _ruleManager = ruleManager,
-       _devtoolsBridge = devtoolsBridge;
+  })  : _pendingRequestManager = pendingRequestManager,
+        _ruleManager = ruleManager,
+        _devtoolsBridge = devtoolsBridge;
 
   /// Called when a request is about to be sent
   @override
@@ -222,6 +222,12 @@ class InterceptifyDioInterceptor extends QueuedInterceptor {
               }
               if (modifications.containsKey('body')) {
                 response.data = modifications['body'];
+              }
+              if (modifications.containsKey('headers')) {
+                final headersMap = modifications['headers'] as Map;
+                headersMap.forEach((key, value) {
+                  response.headers.set(key.toString(), value.toString());
+                });
               }
               InterceptifyLogger.info(
                 'Applied modifications to response: $requestId',

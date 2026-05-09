@@ -9,7 +9,7 @@ class NetworkRequest {
   final DateTime timestamp;
   final bool paused;
 
-  /// Which HTTP client produced this request: 'dio' | 'http' | 'graphql'
+  /// Which HTTP client produced this request: 'dio' | 'http'
   final String clientType;
 
   NetworkRequest({

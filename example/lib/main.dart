@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:interceptify/interceptify.dart';
 
 import 'screens/home_screen.dart';
 import 'screens/http_example_screen.dart';
-import 'screens/graphql_example_screen.dart';
-import 'services/interceptify_link_adapter.dart';
 
 void main() {
   // 1. Initialize Interceptify (debug mode only — no-op in release)
@@ -21,36 +18,14 @@ void main() {
   // 3. package:http setup — wrap with InterceptifyHttpClient
   final httpClient = Interceptify.httpClient(inner: http.Client());
 
-  // 4. graphql_flutter setup — chain InterceptifyGraphQLLink before HttpLink
-  const graphqlEndpoint = 'https://countries.trevorblades.com/graphql';
-  final httpLink = HttpLink(graphqlEndpoint);
-
-  // InterceptifyLinkAdapter bridges InterceptifyGraphQLLink to gql_link's Link
-  final interceptifyLink = InterceptifyLinkAdapter(
-    interceptifyLink: Interceptify.graphqlLink(
-      next: httpLink,
-      endpoint: graphqlEndpoint,
-    ),
-  );
-  final graphqlClient = GraphQLClient(
-    link: interceptifyLink,
-    cache: GraphQLCache(),
-  );
-
-  runApp(MyApp(dio: dio, httpClient: httpClient, graphqlClient: graphqlClient));
+  runApp(MyApp(dio: dio, httpClient: httpClient));
 }
 
 class MyApp extends StatelessWidget {
   final Dio dio;
   final http.Client httpClient;
-  final GraphQLClient graphqlClient;
 
-  const MyApp({
-    required this.dio,
-    required this.httpClient,
-    required this.graphqlClient,
-    super.key,
-  });
+  const MyApp({required this.dio, required this.httpClient, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -60,11 +35,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: _ExampleHome(
-        dio: dio,
-        httpClient: httpClient,
-        graphqlClient: graphqlClient,
-      ),
+      home: _ExampleHome(dio: dio, httpClient: httpClient),
     );
   }
 }
@@ -72,13 +43,8 @@ class MyApp extends StatelessWidget {
 class _ExampleHome extends StatelessWidget {
   final Dio dio;
   final http.Client httpClient;
-  final GraphQLClient graphqlClient;
 
-  const _ExampleHome({
-    required this.dio,
-    required this.httpClient,
-    required this.graphqlClient,
-  });
+  const _ExampleHome({required this.dio, required this.httpClient});
 
   @override
   Widget build(BuildContext context) {
@@ -163,20 +129,6 @@ class _ExampleHome extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // --- GraphQL example ---
-            _ExampleCard(
-              icon: Icons.account_tree,
-              color: Colors.deepPurple,
-              title: 'GraphQL (graphql_flutter)',
-              subtitle: 'InterceptifyGraphQLLink in the Link chain',
-              badge: 'GRAPHQL',
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => GraphQLExampleScreen(client: graphqlClient),
-                ),
-              ),
-            ),
             const Spacer(),
             Container(
               padding: const EdgeInsets.all(12),
@@ -187,7 +139,7 @@ class _ExampleHome extends StatelessWidget {
               ),
               child: Text(
                 '💡 Open Flutter DevTools → Interceptify tab to see all traffic in real-time. '
-                'Switch between List and Grouped view, and try "By HTTP Client" grouping to see Dio / HTTP / GraphQL separately.',
+                'Switch between List and Grouped view, and try "By HTTP Client" grouping to see Dio / HTTP separately.',
                 style: TextStyle(fontSize: 12, color: Colors.amber.shade900),
               ),
             ),

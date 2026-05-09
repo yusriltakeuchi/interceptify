@@ -10,9 +10,6 @@ enum RuleCondition {
 
   /// Pause requests matching an HTTP method
   methodEquals,
-
-  /// Pause GraphQL requests (POST with graphql content)
-  graphql,
 }
 
 /// Represents an interception rule that determines when requests should be paused
@@ -55,26 +52,11 @@ class InterceptRule {
       case RuleCondition.methodEquals:
         if (value == null) return false;
         return requestOptions.method.toUpperCase() == value!.toUpperCase();
-
-      case RuleCondition.graphql:
-        // Check if it's a POST request with graphql content-type or body contains graphql
-        if (requestOptions.method.toUpperCase() != 'POST') return false;
-        final contentType =
-            requestOptions.headers['content-type']?.toString() ?? '';
-        if (contentType.contains('graphql')) return true;
-        if (requestOptions.data is Map) {
-          final data = requestOptions.data as Map;
-          return data.containsKey('query') || data.containsKey('operationName');
-        }
-        if (requestOptions.data is String) {
-          return requestOptions.data.toString().contains('"query"');
-        }
-        return false;
     }
   }
 
   /// Check if a generic HTTP request (without Dio's RequestOptions) matches.
-  /// Used by [InterceptifyHttpClient] and [InterceptifyGraphQLLink].
+  /// Used by [InterceptifyHttpClient].
   bool matchesHttp(String method, String url) {
     if (!enabled) return false;
 
@@ -87,9 +69,6 @@ class InterceptRule {
       case RuleCondition.methodEquals:
         if (value == null) return false;
         return method.toUpperCase() == value!.toUpperCase();
-      case RuleCondition.graphql:
-        return method.toUpperCase() == 'GRAPHQL' ||
-            method.toUpperCase() == 'POST';
     }
   }
 

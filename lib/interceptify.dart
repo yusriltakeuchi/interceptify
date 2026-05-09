@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 import 'src/bridge/devtools_bridge.dart';
 import 'src/interceptor/interceptify_dio_interceptor.dart';
 import 'src/interceptor/interceptify_http_client.dart';
-import 'src/interceptor/interceptify_graphql_link.dart';
 import 'src/manager/pending_request_manager.dart';
 import 'src/rules/intercept_rule.dart';
 import 'src/rules/rule_manager.dart';
@@ -13,7 +12,6 @@ import 'src/utils/logging.dart';
 
 // Re-export for convenience
 export 'src/interceptor/interceptify_http_client.dart';
-export 'src/interceptor/interceptify_graphql_link.dart';
 
 /// Main API for Interceptify network interceptor
 ///
@@ -114,35 +112,6 @@ class Interceptify {
       devtoolsBridge: _devtoolsBridge!,
       pendingRequestManager: _pendingRequestManager!,
       ruleManager: _ruleManager!,
-    );
-  }
-
-  /// Create a GraphQL Link that captures all operations to DevTools.
-  ///
-  /// Pass it as the first Link in your graphql_flutter chain:
-  /// ```dart
-  /// final link = Interceptify.graphqlLink(
-  ///   next: HttpLink('https://api.example.com/graphql'),
-  ///   endpoint: 'https://api.example.com/graphql',
-  /// );
-  /// ```
-  static InterceptifyGraphQLLink graphqlLink({
-    required dynamic next,
-    String endpoint = 'GraphQL',
-  }) {
-    if (_devtoolsBridge == null ||
-        _pendingRequestManager == null ||
-        _ruleManager == null) {
-      throw StateError(
-        'Interceptify not initialized. Call Interceptify.initialize() first.',
-      );
-    }
-    return InterceptifyGraphQLLink(
-      next: next,
-      bridge: _devtoolsBridge!,
-      pendingRequestManager: _pendingRequestManager!,
-      ruleManager: _ruleManager!,
-      endpoint: endpoint,
     );
   }
 

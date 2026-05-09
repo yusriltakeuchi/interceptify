@@ -2,14 +2,14 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Flutter-DevTools_Extension-02569B?logo=flutter&logoColor=white" alt="Flutter DevTools Extension" />
-  <img src="https://img.shields.io/badge/Supports-Dio_%7C_http_%7C_GraphQL-blueviolet" alt="Supports Dio, http, GraphQL" />
+  <img src="https://img.shields.io/badge/Supports-Dio_%7C_http-blueviolet" alt="Supports Dio, http" />
   <img src="https://img.shields.io/badge/Mode-Debug_Only-orange" alt="Debug Only — zero impact in release" />
   <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License" />
 </p>
 
 **Interceptify** is a Flutter DevTools extension that gives you full visibility and control over your app's network layer — intercept, inspect, filter, modify, and group HTTP traffic in real-time, right inside your IDE.
 
-It supports **Dio**, **`package:http`**, and **`graphql_flutter`** out of the box.
+It supports **Dio** and **`package:http`** out of the box.
 
 > **Safe by design.** Interceptify is completely inactive in release builds (`kDebugMode` guard). No performance overhead, no data leaks in production.
 
@@ -22,7 +22,6 @@ It supports **Dio**, **`package:http`**, and **`graphql_flutter`** out of the bo
 - [Quick Start](#-quick-start)
   - [Dio](#using-dio)
   - [package:http](#using-packagehttp)
-  - [graphql_flutter](#using-graphql_flutter)
 - [Using the DevTools Panel](#-using-the-devtools-panel)
   - [Advanced Filters](#advanced-filters)
   - [Smart Grouping](#smart-grouping)
@@ -37,7 +36,7 @@ It supports **Dio**, **`package:http`**, and **`graphql_flutter`** out of the bo
 
 | Category | What it does |
 |---|---|
-| **Multi-client** | Works with Dio, `package:http`, and `graphql_flutter` |
+| **Multi-client** | Works with Dio and `package:http` |
 | **Live inspection** | See every request and response as it happens |
 | **Advanced filters** | Regex search, method filter, status code, duration, failed-only |
 | **Smart grouping** | Group traffic by domain, path, method, client, or status — like Charles Proxy |
@@ -59,7 +58,6 @@ dependencies:
 
   dio: ^5.4.0              # if you use Dio
   http: ^1.2.0             # if you use package:http
-  graphql_flutter: ^5.1.2  # if you use GraphQL
 ```
 
 Then run:
@@ -72,7 +70,7 @@ flutter pub get
 
 ## 🚀 Quick Start
 
-All three integrations share the same first step: **call `Interceptify.initialize()` once before `runApp()`**. Everything else depends on which HTTP client you use.
+All integrations share the same first step: **call `Interceptify.initialize()` once before `runApp()`**. Everything else depends on which HTTP client you use.
 
 ---
 
@@ -141,84 +139,6 @@ Requests made with this client appear in DevTools with an **HTTP** badge and can
 
 ---
 
-### Using `graphql_flutter`
-
-Because `interceptify` intentionally has no compile-time dependency on `graphql_flutter`, you need a small adapter file in your own project to bridge the two.
-
-**Step 1 — Create `interceptify_link_adapter.dart` anywhere in your project:**
-
-```dart
-import 'package:gql_exec/gql_exec.dart';
-import 'package:gql_link/gql_link.dart';
-import 'package:interceptify/interceptify.dart';
-
-/// Bridges InterceptifyGraphQLLink into the standard gql_link chain.
-class InterceptifyLinkAdapter extends Link {
-  final InterceptifyGraphQLLink interceptifyLink;
-  InterceptifyLinkAdapter({required this.interceptifyLink});
-
-  @override
-  Stream<Response> request(Request request, [NextLink? forward]) {
-    return interceptifyLink
-        .request(request, forward != null ? (r) => forward(r as Request) : null)
-        .cast<Response>();
-  }
-}
-```
-
-**Step 2 — Wire it into your GraphQL client:**
-
-```dart
-import 'package:graphql_flutter/graphql_flutter.dart';
-import 'package:interceptify/interceptify.dart';
-import 'interceptify_link_adapter.dart';
-
-void main() {
-  Interceptify.initialize();
-
-  const endpoint = 'https://api.example.com/graphql';
-
-  final client = GraphQLClient(
-    link: InterceptifyLinkAdapter(
-      interceptifyLink: Interceptify.graphqlLink(
-        next: HttpLink(endpoint),
-        endpoint: endpoint,
-      ),
-    ),
-    cache: GraphQLCache(),
-  );
-
-  runApp(MyApp(client: client));
-}
-```
-
-**Step 3 — Use `graphql_flutter` as usual:**
-
-```dart
-// Query
-final result = await client.query(QueryOptions(
-  document: gql(r'''
-    query GetUsers {
-      users { id name email }
-    }
-  '''),
-));
-
-// Mutation with variables
-await client.mutate(MutationOptions(
-  document: gql(r'''
-    mutation CreateUser($name: String!) {
-      createUser(name: $name) { id }
-    }
-  '''),
-  variables: {'name': 'John'},
-));
-```
-
-GraphQL operations appear in DevTools with the method **GRAPHQL**. Their request body shows `operationName`, `query`, `variables`, and `type` (query / mutation / subscription).
-
----
-
 ## 🖥 Using the DevTools Panel
 
 1. Run your app in **Debug Mode** (`flutter run`).
@@ -258,8 +178,8 @@ When grouped, a strategy dropdown appears next to the toggle:
 |---|---|
 | **By Domain** | Hostname — e.g., `api.example.com`, `cdn.assets.com` |
 | **By Path Prefix** | First path segment — e.g., `/users`, `/auth`, `/products` |
-| **By Method** | HTTP method — GET, POST, GRAPHQL, etc. |
-| **By HTTP Client** | The client that made the request — Dio, HTTP, or GraphQL |
+| **By Method** | HTTP method — GET, POST, etc. |
+| **By HTTP Client** | The client that made the request — Dio or HTTP |
 | **By Status Code** | Status family — 2xx Success, 4xx Client Error, 5xx Server Error |
 
 Each group header shows a **request count badge** and a red **error count badge** when failures are present. Click any group to expand or collapse it.
@@ -314,10 +234,6 @@ Interceptify.initialize({bool debugLogging = true});
 // ── Interceptors ──────────────────────────────────────────────────────────
 Interceptify.dioInterceptor                           // add to dio.interceptors
 Interceptify.httpClient({http.Client? inner})         // wrap http.Client()
-Interceptify.graphqlLink({                            // use with adapter (see above)
-  required dynamic next,
-  String endpoint = 'GraphQL',
-})
 
 // ── Dio Retry Support ─────────────────────────────────────────────────────
 Interceptify.registerDioInstance(Dio dio);            // enables Retry in DevTools
@@ -345,7 +261,7 @@ Interceptify.dispose();
 ## 💡 Tips & Tricks
 
 - **Combine filters**: use regex `^/users/\d+$` together with the *Failed Only* toggle to isolate broken user-detail endpoints instantly.
-- **Group by HTTP Client**: when debugging an issue that might be client-specific, this grouping separates Dio, HTTP, and GraphQL traffic into distinct sections.
+- **Group by HTTP Client**: when debugging an issue that might be client-specific, this grouping separates Dio and HTTP traffic into distinct sections.
 - **Copy as cURL**: every request can be exported as a ready-to-run cURL command — paste it straight into your terminal or Postman.
 - **Increase the timeout**: if you need more time to inspect or edit a request before it auto-resumes, go to **Rules → Settings** and raise the interception timeout.
 - **Retry without re-triggering**: use the **Retry** button in the detail view to resend a request without having to tap through your UI again — great for testing a fix immediately.

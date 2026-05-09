@@ -72,13 +72,4 @@ void main() {
       client.close();
     });
   });
-
-  group('Interceptify GraphQL link', () {
-    test('graphqlLink() returns a non-null link after initialization', () {
-      Interceptify.initialize();
-      // Pass a dummy next — we're only verifying the link is created
-      final link = Interceptify.graphqlLink(next: null, endpoint: 'test');
-      expect(link, isNotNull);
-    });
-  });
 }

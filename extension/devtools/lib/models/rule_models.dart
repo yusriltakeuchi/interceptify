@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum RuleCondition { always, urlContains, methodEquals, graphql }
+enum RuleCondition { always, urlContains, methodEquals }
 
 extension RuleConditionExt on RuleCondition {
   String get displayName {
@@ -11,8 +11,6 @@ extension RuleConditionExt on RuleCondition {
         return 'URL Contains';
       case RuleCondition.methodEquals:
         return 'Method Equals';
-      case RuleCondition.graphql:
-        return 'GraphQL Only';
     }
   }
 
@@ -24,8 +22,6 @@ extension RuleConditionExt on RuleCondition {
         return Icons.link;
       case RuleCondition.methodEquals:
         return Icons.http;
-      case RuleCondition.graphql:
-        return Icons.graphic_eq;
     }
   }
 }

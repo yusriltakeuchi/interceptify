@@ -94,7 +94,7 @@ class RuleManager {
   }
 
   /// Check if a generic HTTP request (non-Dio) should be paused.
-  /// Used by [InterceptifyHttpClient] and [InterceptifyGraphQLLink].
+  /// Used by [InterceptifyHttpClient].
   bool shouldPauseHttpRequest(String method, String url) {
     if (!_enabled) return false;
     if (_pauseAllRequests) return true;

@@ -36,10 +36,10 @@ class InterceptifyHttpClient extends http.BaseClient {
     required DevtoolsBridge devtoolsBridge,
     required PendingRequestManager pendingRequestManager,
     required RuleManager ruleManager,
-  }) : _inner = inner,
-       _devtoolsBridge = devtoolsBridge,
-       _pendingRequestManager = pendingRequestManager,
-       _ruleManager = ruleManager;
+  })  : _inner = inner,
+        _devtoolsBridge = devtoolsBridge,
+        _pendingRequestManager = pendingRequestManager,
+        _ruleManager = ruleManager;
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
@@ -118,7 +118,7 @@ class InterceptifyHttpClient extends http.BaseClient {
 
           // Re-post the updated request to DevTools so the UI reflects changes
           if (effectiveRequest is http.Request) {
-            final modReq = effectiveRequest as http.Request;
+            final modReq = effectiveRequest;
             dynamic modBody = modReq.body;
             try {
               final trimmed = modReq.body.trimLeft();
@@ -161,19 +161,20 @@ class InterceptifyHttpClient extends http.BaseClient {
       final responseBytes = await streamedResponse.stream.toBytes();
       dynamic responseBody = _parseResponseBody(responseBytes);
 
-      final responseHeaders = <String, dynamic>{
+      var responseStatusCode = streamedResponse.statusCode;
+      var responseHeaders = <String, dynamic>{
         for (final e in streamedResponse.headers.entries) e.key: e.value,
       };
 
       // --- Check pause on response ---
-      final shouldPauseResponse = _ruleManager.enabled &&
-          _ruleManager.pauseAllResponses;
+      final shouldPauseResponse =
+          _ruleManager.enabled && _ruleManager.pauseAllResponses;
 
       if (shouldPauseResponse) {
         // Post response data first so DevTools can display it
         _devtoolsBridge.postResponseEvent(
           requestId,
-          streamedResponse.statusCode,
+          responseStatusCode,
           responseBody,
           responseHeaders,
           duration,
@@ -190,13 +191,20 @@ class InterceptifyHttpClient extends http.BaseClient {
             requestId,
             responseBody,
             responseHeaders,
-            streamedResponse.statusCode,
+            responseStatusCode,
             timeout: Duration(seconds: _ruleManager.timeoutSeconds),
           );
 
           if (modifications != null) {
             if (modifications.containsKey('body')) {
               responseBody = modifications['body'];
+            }
+            if (modifications.containsKey('statusCode')) {
+              responseStatusCode = modifications['statusCode'] as int;
+            }
+            if (modifications.containsKey('headers')) {
+              responseHeaders =
+                  (modifications['headers'] as Map).cast<String, dynamic>();
             }
           }
         } catch (_) {}
@@ -208,30 +216,32 @@ class InterceptifyHttpClient extends http.BaseClient {
 
       _devtoolsBridge.postResponseEvent(
         requestId,
-        streamedResponse.statusCode,
+        responseStatusCode,
         responseBody,
         responseHeaders,
         duration,
       );
 
       InterceptifyLogger.info(
-        'HTTP response: $requestId (${streamedResponse.statusCode}) - ${duration.inMilliseconds}ms',
+        'HTTP response: $requestId ($responseStatusCode) - ${duration.inMilliseconds}ms',
       );
 
       // Rebuild the StreamedResponse from the already-consumed bytes
       final bodyToReturn = responseBody is String
           ? responseBody
-          : (responseBody != null
-              ? jsonEncode(responseBody)
-              : '');
+          : (responseBody != null ? jsonEncode(responseBody) : '');
       final bodyBytes = utf8.encode(bodyToReturn);
+
+      // Final headers for http.StreamedResponse must be Map<String, String>
+      final finalHeaders =
+          responseHeaders.map((k, v) => MapEntry(k, v.toString()));
 
       return http.StreamedResponse(
         http.ByteStream.fromBytes(bodyBytes),
-        streamedResponse.statusCode,
+        responseStatusCode,
         contentLength: bodyBytes.length,
         request: streamedResponse.request,
-        headers: streamedResponse.headers,
+        headers: finalHeaders,
         isRedirect: streamedResponse.isRedirect,
         persistentConnection: streamedResponse.persistentConnection,
         reasonPhrase: streamedResponse.reasonPhrase,
@@ -299,8 +309,7 @@ class InterceptifyHttpClient extends http.BaseClient {
     }
 
     // --- Query parameters (merge/override) ---
-    final modParams =
-        (modifications['queryParameters'] as Map?)?.map(
+    final modParams = (modifications['queryParameters'] as Map?)?.map(
           (k, v) => MapEntry(k.toString(), v.toString()),
         ) ??
         <String, String>{};

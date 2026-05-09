@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:interceptify/interceptify.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 

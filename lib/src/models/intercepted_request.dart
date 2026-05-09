@@ -1,7 +1,7 @@
 import 'package:collection/collection.dart';
 
 /// Represents an HTTP request that has been intercepted.
-/// Supports multiple HTTP clients: Dio, dart:http, GraphQL.
+/// Supports multiple HTTP clients: Dio, dart:http.
 class InterceptedRequest {
   final String id;
   final String method;
@@ -13,7 +13,7 @@ class InterceptedRequest {
   final bool paused;
 
   /// Identifies which HTTP client made this request.
-  /// Values: 'dio' | 'http' | 'graphql'
+  /// Values: 'dio' | 'http'
   final String clientType;
 
   InterceptedRequest({

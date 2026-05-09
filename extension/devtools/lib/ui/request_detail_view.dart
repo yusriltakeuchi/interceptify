@@ -467,6 +467,7 @@ class _RequestDetailViewState extends State<RequestDetailView>
       ),
       child: TabBar(
         controller: _tabController,
+        isScrollable: true,
         labelStyle: const TextStyle(fontWeight: FontWeight.bold),
         unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal),
         tabs: const [
@@ -797,7 +798,7 @@ class _RequestDetailViewState extends State<RequestDetailView>
       );
     }
 
-    // If the body arrived as a raw JSON string (from package:http or GraphQL),
+    // If the body arrived as a raw JSON string (from package:http),
     // parse it into a Map/List so JsonColorViewer can render the interactive tree.
     dynamic viewerData = data;
     if (data is String) {
@@ -831,7 +832,6 @@ class _RequestDetailViewState extends State<RequestDetailView>
       ],
     );
   }
-
 
   Widget _buildUniversalActionFooter() {
     if (!widget.request.paused && !_isEditing && !_isEditingResponse) {
