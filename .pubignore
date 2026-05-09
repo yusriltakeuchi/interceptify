@@ -1,12 +1,16 @@
-# Files and directories excluded from pub.dev publishing.
-# (pub.dev already excludes .dart_tool, build/, .git, etc. by default)
-
 # IDE
 .idea/
 .vscode/
 
 # Build artifacts
 **/build/
+
+# Re-include DevTools extension build
+!extension/devtools/build/
+!extension/devtools/build/**
+!extension/devtools/build/web/
+!extension/devtools/build/web/**
+
 coverage/
 doc/api/
 
@@ -14,5 +18,5 @@ doc/api/
 Makefile
 .github/
 
-# Extension build output (the pre-built web/ is included, not the source build cache)
+# Optional: reduce package size
 extension/devtools/build/web/canvaskit/
