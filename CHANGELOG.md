@@ -1,5 +1,12 @@
-## 0.0.1+2
+## 0.0.1+3
 
+*Released: 2026-05-09*
+
+**Improvements**
+- Updated package description in `pubspec.yaml` for better SEO on pub.dev.
+- Bumped dependency constraints to their latest compatible versions (`dio`, `http`, `uuid`, `collection`, `vm_service`).
+
+## 0.0.1+2
 *Released: 2026-05-09*
 
 **Bug Fixes**
